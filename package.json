@@ -1,0 +1,18 @@
+{
+  "name": "innv-genesis",
+  "version": "1.0.0",
+  "description": "Monorepo para o ecossistema @innv",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Kelvin (innv)",
+  "scripts": {
+    "build": "pnpm --filter \"./packages/**\" build",
+    "clean": "pnpm -r exec rimraf dist node_modules",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.4.5"
+  }
+}

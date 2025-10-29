@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* * OVERRIDES:
+     * O 'base' define um 'target' e 'module' genéricos (ES2021/commonjs).
+     * Nós os sobrescrevemos aqui para este pacote específico,
+     * que precisa de um setup mais moderno (ES2022/NodeNext)
+     * para o seu build dual CJS/ESM.
+     */
+    "target": "ES2022",
+    "module": "NodeNext",
+    "lib": ["ES2022"],
+    "moduleResolution": "NodeNext",
+
+    /* * REMOVIDOS (Já estão no tsconfig.base.json):
+     * - strict
+     * - esModuleInterop
+     * - skipLibCheck
+     * - forceConsistentCasingInFileNames
+     * - experimentalDecorators
+     * - emitDecoratorMetadata
+     */
+
+    "noEmit": true // Boa prática para o tsconfig principal (que só checa tipos)
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"]
+}
