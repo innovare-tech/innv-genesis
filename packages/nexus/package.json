@@ -1,6 +1,6 @@
 {
   "name": "@innv/nexus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cliente HTTP declarativo e type-safe para NestJS, parte do ecossistema innv-genesis.",
   "author": "Kelvin (innv)",
   "license": "UNLICENSED",

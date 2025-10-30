@@ -21,9 +21,9 @@ type RequireFn = (id: string) => any;
  * @param requireFn A função 'require' a ser usada (padrão: Node's require).
  */
 export function discoverComponents(
-    basePath: string,
-    reflectorInst: Reflector,
-    requireFn: RequireFn = require,
+  basePath: string,
+  reflectorInst: Reflector,
+  requireFn: RequireFn = require,
 ): DiscoveredComponents {
   const providers: Type[] = [];
   const controllers: Type[] = [];
@@ -49,12 +49,10 @@ export function discoverComponents(
           if (reflectorInst.get<string>('path', exportedClass)) {
             controllers.push(exportedClass);
           } else if (
-              reflectorInst.get<boolean>('__injectable__', exportedClass)
+            reflectorInst.get<boolean>('__injectable__', exportedClass)
           ) {
             providers.push(exportedClass);
-          } else if (
-              reflectorInst.get(API_CLIENT_META_KEY, exportedClass)
-          ) {
+          } else if (reflectorInst.get(API_CLIENT_META_KEY, exportedClass)) {
             nexusClients.push(exportedClass);
           }
         }

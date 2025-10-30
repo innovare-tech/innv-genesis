@@ -1,10 +1,13 @@
+import 'reflect-metadata';
 import { Type } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as glob from 'glob';
 import { discoverComponents } from '../../src/core/auto-discovery.helper';
+import { API_CLIENT_META_KEY } from '@innv/nexus';
 
 class MockController {}
 class MockProvider {}
+class MockApiClient {}
 class NonDecoratedClass {}
 
 jest.mock('glob', () => ({
@@ -20,28 +23,30 @@ describe('discoverComponents', () => {
   beforeEach(() => {
     mockGlobSync = jest.spyOn(glob, 'globSync');
 
-    // Cria um mock simples para Reflector.get
-    mockReflectorGet = jest.fn((metadataKey: string, target: Type<any>) => {
-      if (metadataKey === 'path' && target === MockController) return '/mock';
-      if (metadataKey === '__injectable__' && target === MockProvider)
-        return true;
-      return undefined;
-    });
-    // Cria uma instância mock do Reflector que usa nosso mock do 'get'
+    mockReflectorGet = jest.fn(
+      (metadataKey: string | symbol, target: Type<any>) => {
+        if (metadataKey === 'path' && target === MockController) return '/mock';
+        if (metadataKey === '__injectable__' && target === MockProvider)
+          return true;
+        if (metadataKey === API_CLIENT_META_KEY && target === MockApiClient)
+          return { baseUrl: 'http://test.com' };
+        return undefined;
+      },
+    );
     mockReflector = { get: mockReflectorGet } as unknown as Reflector;
 
-    // Cria a função mock 'require'
     mockRequire = jest.fn((request: string) => {
       if (request === '/fake/path/controller.js') return { MockController };
       if (request === '/fake/path/provider.js') return { MockProvider };
+      if (request === '/fake/path/api-client.js') return { MockApiClient };
       if (request === '/fake/path/mixed.js')
-        return { MockController, MockProvider };
+        return { MockController, MockProvider, MockApiClient };
       if (request === '/fake/path/non-decorated.js')
         return { NonDecoratedClass };
       if (request === '/fake/path/non-class.js') return { configValue: 123 };
       if (request === '/fake/path/error.js')
         throw new Error('Mock require error');
-      return {}; // Retorno padrão para caminhos não mockados
+      return {};
     });
   });
 
@@ -51,14 +56,17 @@ describe('discoverComponents', () => {
 
   it('should return empty arrays when no files are found', () => {
     mockGlobSync.mockReturnValue([]);
-    // Chama a função passando os mocks
     const result = discoverComponents('/base', mockReflector, mockRequire);
-    expect(result).toEqual({ providers: [], controllers: [] });
+    expect(result).toEqual({
+      providers: [],
+      controllers: [],
+      nexusClients: [],
+    });
     expect(mockGlobSync).toHaveBeenCalledWith(
       '/base/**/*.{ts,js}',
       expect.any(Object),
     );
-    expect(mockRequire).not.toHaveBeenCalled(); // Require não deve ser chamado se não há arquivos
+    expect(mockRequire).not.toHaveBeenCalled();
   });
 
   it('should discover controllers correctly', () => {
@@ -67,6 +75,7 @@ describe('discoverComponents', () => {
 
     expect(result.providers).toEqual([]);
     expect(result.controllers).toEqual([MockController]);
+    expect(result.nexusClients).toEqual([]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/controller.js');
     expect(mockReflectorGet).toHaveBeenCalledWith('path', MockController);
   });
@@ -77,6 +86,7 @@ describe('discoverComponents', () => {
 
     expect(result.providers).toEqual([MockProvider]);
     expect(result.controllers).toEqual([]);
+    expect(result.nexusClients).toEqual([]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/provider.js');
     expect(mockReflectorGet).toHaveBeenCalledWith('path', MockProvider);
     expect(mockReflectorGet).toHaveBeenCalledWith(
@@ -85,12 +95,32 @@ describe('discoverComponents', () => {
     );
   });
 
-  it('should discover both controllers and providers in the same file', () => {
+  it('should discover nexus clients correctly', () => {
+    mockGlobSync.mockReturnValue(['/fake/path/api-client.js']);
+    const result = discoverComponents('/base', mockReflector, mockRequire);
+
+    expect(result.providers).toEqual([]);
+    expect(result.controllers).toEqual([]);
+    expect(result.nexusClients).toEqual([MockApiClient]);
+    expect(mockRequire).toHaveBeenCalledWith('/fake/path/api-client.js');
+    expect(mockReflectorGet).toHaveBeenCalledWith('path', MockApiClient);
+    expect(mockReflectorGet).toHaveBeenCalledWith(
+      '__injectable__',
+      MockApiClient,
+    );
+    expect(mockReflectorGet).toHaveBeenCalledWith(
+      API_CLIENT_META_KEY,
+      MockApiClient,
+    );
+  });
+
+  it('should discover all component types in the same file', () => {
     mockGlobSync.mockReturnValue(['/fake/path/mixed.js']);
     const result = discoverComponents('/base', mockReflector, mockRequire);
 
     expect(result.providers).toEqual([MockProvider]);
     expect(result.controllers).toEqual([MockController]);
+    expect(result.nexusClients).toEqual([MockApiClient]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/mixed.js');
   });
 
@@ -100,10 +130,15 @@ describe('discoverComponents', () => {
 
     expect(result.providers).toEqual([]);
     expect(result.controllers).toEqual([]);
+    expect(result.nexusClients).toEqual([]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/non-decorated.js');
     expect(mockReflectorGet).toHaveBeenCalledWith('path', NonDecoratedClass);
     expect(mockReflectorGet).toHaveBeenCalledWith(
       '__injectable__',
+      NonDecoratedClass,
+    );
+    expect(mockReflectorGet).toHaveBeenCalledWith(
+      API_CLIENT_META_KEY,
       NonDecoratedClass,
     );
   });
@@ -114,8 +149,9 @@ describe('discoverComponents', () => {
 
     expect(result.providers).toEqual([]);
     expect(result.controllers).toEqual([]);
+    expect(result.nexusClients).toEqual([]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/non-class.js');
-    expect(mockReflectorGet).not.toHaveBeenCalled(); // Reflector não é chamado para não-funções
+    expect(mockReflectorGet).not.toHaveBeenCalled();
   });
 
   it('should handle errors during require and continue processing other files', () => {
@@ -125,15 +161,15 @@ describe('discoverComponents', () => {
     ]);
     const result = discoverComponents('/base', mockReflector, mockRequire);
 
-    // Deve pular o arquivo com erro e processar o próximo
     expect(result.providers).toEqual([MockProvider]);
     expect(result.controllers).toEqual([]);
+    expect(result.nexusClients).toEqual([]);
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/error.js');
     expect(mockRequire).toHaveBeenCalledWith('/fake/path/provider.js');
   });
 
   it('should use the ignore patterns provided to globSync', () => {
-    discoverComponents('/base', mockReflector, mockRequire); // Apenas chama para verificar a chamada do globSync
+    discoverComponents('/base', mockReflector, mockRequire);
     expect(mockGlobSync).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({

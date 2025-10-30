@@ -1,7 +1,6 @@
-import {
-  createNexusClientProvider,
-  NexusModule,
-} from '@innv/nexus';
+import 'reflect-metadata';
+
+import { createNexusClientProvider, NexusModule } from '@innv/nexus';
 
 import {
   CanActivate,
@@ -126,7 +125,11 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   private readonly plugins: AppInitializerPlugin[] = [];
   private readonly featureModules: AnyModule[] = [];
 
-  private autoDiscoveredComponents?: { providers: Type[]; controllers: Type[]; nexusClients: Type[]; };
+  private autoDiscoveredComponents?: {
+    providers: Type[];
+    controllers: Type[];
+    nexusClients: Type[];
+  };
   private readonly globalProviders: Provider[] = [];
   private readonly nexusClientProviders: Provider[] = [];
   private readonly globalInterceptors: NestInterceptor[] = [];
@@ -490,15 +493,15 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
 
     // 3. ESTA LINHA AGORA RECEBE OS 'nexusClients'
     this.autoDiscoveredComponents = discoverComponents(
-        options.basePath,
-        reflector,
+      options.basePath,
+      reflector,
     );
 
     // 4. ADICIONE ESTE BLOCO LÓGICO
     // Se encontramos algum cliente Nexus, vamos configurá-los.
     if (this.autoDiscoveredComponents.nexusClients.length > 0) {
       this.logger.log(
-          `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.nexusClients.length} clientes Nexus.`,
+        `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.nexusClients.length} clientes Nexus.`,
       );
 
       // Garante que o NexusModule (com o NexusHttpService) seja importado

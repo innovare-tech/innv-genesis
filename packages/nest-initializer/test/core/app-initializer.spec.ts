@@ -81,6 +81,19 @@ jest.mock('@nestjs/swagger', () => ({
   })),
 }));
 
+jest.mock('@innv/nexus', () => ({
+  __esModule: true,
+  createNexusClientProvider: jest.fn((client) => ({
+    provide: client,
+    useValue: 'mockedClient',
+  })),
+  NexusModule: class MockNexusModule {},
+}));
+
+import { createNexusClientProvider, NexusModule } from '@innv/nexus';
+
+const mockCreateNexusClientProvider = createNexusClientProvider as jest.Mock;
+
 const mockConfigModule = {
   forRoot: jest.fn().mockReturnValue('ConfigModuleInstance'),
 };
@@ -126,6 +139,7 @@ class MockPlugin implements AppInitializerPlugin {
 }
 class MockProvider {}
 class MockController {}
+class MockNexusClient {}
 
 describe('AppInitializer', () => {
   let initializer: AppInitializer<INestApplication>;
@@ -143,6 +157,7 @@ describe('AppInitializer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCreateNexusClientProvider.mockClear();
 
     mockLoggerError = jest.spyOn(Logger.prototype, 'error');
     mockProcessExit = jest
@@ -174,7 +189,7 @@ describe('AppInitializer', () => {
       get: jest.fn((token: any) => {
         if (token === Reflector) return new Reflector();
         return undefined;
-      }) as any, // <<< CORREÇÃO AQUI
+      }) as any,
       useGlobalInterceptors: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
       getUrl: jest.fn().mockResolvedValue('http://localhost:3000'),
@@ -392,6 +407,29 @@ describe('AppInitializer', () => {
       expect(initializer['autoDiscoveredComponents']).toEqual(mockComponents);
     });
 
+    it('should correctly register nexusClients from withAutoDiscovery', () => {
+      const mockComponents = {
+        providers: [MockProvider],
+        controllers: [MockController],
+        nexusClients: [MockNexusClient],
+      };
+      jest
+        .spyOn(AutoDiscoveryHelper, 'discoverComponents')
+        .mockReturnValue(mockComponents);
+
+      initializer.withAutoDiscovery({ basePath: '/test' });
+
+      expect(initializer['featureModules']).toContain(NexusModule);
+      expect(mockCreateNexusClientProvider).toHaveBeenCalledWith(
+        MockNexusClient,
+      );
+      expect(initializer['nexusClientProviders']).toHaveLength(1);
+      expect(initializer['nexusClientProviders'][0]).toEqual({
+        provide: MockNexusClient,
+        useValue: 'mockedClient',
+      });
+    });
+
     it('should add Terminus module on withHealthCheck', () => {
       const options: TerminusHealthCheckOptions = { database: true };
       initializer.withHealthCheck(options);
@@ -563,7 +601,7 @@ describe('AppInitializer', () => {
     it('should apply plugins', async () => {
       const plugin1 = new MockPlugin();
       const plugin2 = new MockPlugin();
-      jest.spyOn(plugin1, 'apply'); // Spy on apply method
+      jest.spyOn(plugin1, 'apply');
       jest.spyOn(plugin2, 'apply');
       initializer.withPlugin(plugin1);
       initializer.withPlugin(plugin2);

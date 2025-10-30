@@ -1,0 +1,34 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8 # Ou a versão que você usa
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm' # Mudar cache para 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install # Mudar para pnpm install
+
+      - name: Run Lint
+        run: pnpm run lint # Manter (presume que está no package.json raiz)
+
+      - name: Run Tests
+        run: pnpm test # Manter (presume que está no package.json raiz)
+
+      - name: Build
+        run: pnpm run build # Manter (presume que está no package.json raiz)
