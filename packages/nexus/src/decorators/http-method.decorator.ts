@@ -11,13 +11,13 @@ const createMethodDecorator =
     (method: ApiMethodMeta['method']) =>
         (path = ''): MethodDecorator => {
             return (
-                _target: Object,
-                _propertyKey: string | symbol,
-                descriptor: PropertyDescriptor,
+                target: Object,
+                propertyKey: string | symbol,
+                _descriptor: PropertyDescriptor,
             ) => {
                 const meta: ApiMethodMeta = { method, path };
 
-                Reflect.defineMetadata(API_METHOD_META_KEY, meta, descriptor.value);
+                Reflect.defineMetadata(API_METHOD_META_KEY, meta, target, propertyKey);
             };
         };
 

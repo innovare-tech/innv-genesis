@@ -15,3 +15,4 @@ export * from './decorators/param.decorator';
 // NestJS Integration
 export * from './nest/nexus.module';
 export * from './nest/nexus-client.provider';
+export * from './nest/validation.helper';

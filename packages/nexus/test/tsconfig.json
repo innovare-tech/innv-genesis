@@ -1,0 +1,18 @@
+{
+  // Herda do tsconfig principal do pacote nexus
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // Não precisamos gerar declarações ou sourcemaps para testes
+    "declaration": false,
+    "sourceMap": true,
+    "inlineSources": true,
+    "outDir": "../dist-test", // Diretório de saída diferente para não conflitar
+    "rootDir": "..", // A raiz para encontrar src e test
+    "baseUrl": ".", // Necessário para ts-jest
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  // Inclui tanto o código fonte quanto os testes
+  "include": ["../src/**/*.ts", "./**/*.ts"],
+  "exclude": ["node_modules", "../dist"]
+}

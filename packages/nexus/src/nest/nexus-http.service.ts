@@ -106,6 +106,7 @@ export class NexusHttpService implements OnModuleInit {
                 response: undefined,
                 message: (error as Error).message || 'Unknown error',
                 isAxiosError: false,
+                code: 'NEXUS_INTERNAL_ERROR'
             } as NexusHttpError<E>;
         }
     }

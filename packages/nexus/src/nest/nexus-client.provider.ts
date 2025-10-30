@@ -1,4 +1,4 @@
-import { Provider, Type } from '@nestjs/common';
+import { Provider, Abstract } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import 'reflect-metadata';
 import {
@@ -17,18 +17,18 @@ import {
     API_PARAM_META_KEY,
     ApiParamMeta,
 } from '../decorators/param.decorator';
-import { Err, Ok } from '../result';
+import { Err, Ok, Result } from '../result';
 import { NexusHttpError, NexusHttpService } from './nexus-http.service';
+import {
+    transformAndValidate,
+} from './validation.helper';
 
-export function createNexusClientProvider<T>(
-    clientClass: Type<T>,
+export function createNexusClientProvider<T extends object>(
+    clientClass: Abstract<T>,
 ): Provider<T> {
     return {
         provide: clientClass,
-        inject: [
-            NexusHttpService,
-            { token: ConfigService, optional: true },
-        ],
+        inject: [NexusHttpService, { token: ConfigService, optional: true }],
         useFactory: (
             httpService: NexusHttpService,
             configService?: ConfigService,
@@ -71,38 +71,38 @@ export function createNexusClientProvider<T>(
                 );
             }
 
-            // FIX 1 (TS7053): Tipamos o proxy como um Record.
-            // Ele mapeia nomes de métodos (string) para funções assíncronas.
-            const serviceProxy: Record<string | symbol, (...args: any[]) => Promise<any>> = {};
+            const serviceProxy: Record<
+                string | symbol,
+                (...args: any[]) => Promise<Result<any, any>>
+            > = {};
 
-            Object.getOwnPropertyNames(clientClass.prototype)
-                .filter((name) => name !== 'constructor')
-                .forEach((methodName) => {
+            for (const methodName of Object.getOwnPropertyNames(
+                clientClass.prototype,
+            )) {
+                if (methodName === 'constructor') continue;
+
+                const methodMeta: ApiMethodMeta | undefined = Reflect.getMetadata(
+                    API_METHOD_META_KEY,
+                    clientClass.prototype,
+                    methodName,
+                );
+
+                if (methodMeta) {
+                    const paramsMeta: ApiParamMeta[] =
+                        Reflect.getMetadata(
+                            API_PARAM_META_KEY,
+                            clientClass.prototype,
+                            methodName,
+                        ) || [];
+
+                    const errorMeta: ApiErrorMeta =
+                        Reflect.getMetadata(
+                            API_ERROR_META_KEY,
+                            clientClass.prototype,
+                            methodName,
+                        ) || new Map();
 
                     serviceProxy[methodName] = async (...args: any[]) => {
-                        const originalMethod = clientClass.prototype[methodName];
-
-                        const methodMeta: ApiMethodMeta = Reflect.getMetadata(
-                            API_METHOD_META_KEY,
-                            originalMethod,
-                        );
-                        const paramsMeta: ApiParamMeta[] =
-                            Reflect.getMetadata(
-                                API_PARAM_META_KEY,
-                                clientClass.prototype,
-                                methodName,
-                            ) || [];
-                        const errorMeta: ApiErrorMeta =
-                            Reflect.getMetadata(API_ERROR_META_KEY, originalMethod) ||
-                            new Map();
-
-                        if (!methodMeta) {
-                            console.warn(
-                                `[Nexus] Método ${clientClass.name}.${methodName} não tem decorator de método (ex: @Get). Será ignorado.`,
-                            );
-                            return;
-                        }
-
                         let path = methodMeta.path;
                         const headers = { ...resolvedOptions.staticHeaders };
                         const queryParams = new URLSearchParams();
@@ -111,18 +111,14 @@ export function createNexusClientProvider<T>(
                         for (const param of paramsMeta) {
                             const argValue = args[param.index];
                             if (argValue === undefined) continue;
-
-                            // FIX 2 (TS2345) & FIX 3 (TS2538):
-                            // Adicionamos '&& param.name' para garantir que o nome exista
-                            // antes de usá-lo como chave ou em .append()
                             if (param.type === 'path' && param.name) {
                                 path = path.replace(`:${param.name}`, encodeURIComponent(argValue));
                             } else if (param.type === 'query' && param.name) {
-                                queryParams.append(param.name, argValue);
+                                queryParams.append(param.name, String(argValue));
                             } else if (param.type === 'body') {
                                 body = argValue;
                             } else if (param.type === 'header' && param.name) {
-                                headers[param.name] = argValue;
+                                headers[param.name] = String(argValue);
                             }
                         }
 
@@ -131,32 +127,35 @@ export function createNexusClientProvider<T>(
 
                         try {
                             const response = await httpService.request(resolvedOptions, {
-                                method: methodMeta.method,
-                                url: finalUrl,
-                                headers: headers,
-                                data: body,
+                                method: methodMeta.method, url: finalUrl, headers: headers, data: body,
                             });
-
                             return Ok(response.data, response.status);
                         } catch (error) {
-                            // FIX 4 (Erro 162): Removemos o <any> explícito.
                             const httpError = error as NexusHttpError;
-
                             if (httpError.isAxiosError && httpError.response) {
                                 const status = httpError.response.status;
                                 const errorDtoClass = errorMeta.get(status);
 
                                 if (errorDtoClass) {
-                                    return Err(httpError.response.data, status);
+                                    try {
+                                        const validatedErrorData = await transformAndValidate(
+                                            httpError.response.data, errorDtoClass, status,
+                                        );
+                                        return Err(validatedErrorData, status);
+                                    } catch (validationError) {
+                                        throw validationError;
+                                    }
                                 }
                             }
 
+                            const errorMessage = (httpError as unknown as Error)?.message || String(error);
                             throw new Error(
-                                `[Nexus] Erro não tratado em ${clientClass.name}.${methodName}: ${httpError.message}`,
+                                `[Nexus] Erro não tratado em ${clientClass.name}.${methodName}: ${errorMessage}`,
                             );
                         }
                     };
-                });
+                }
+            }
 
             return serviceProxy as T;
         },

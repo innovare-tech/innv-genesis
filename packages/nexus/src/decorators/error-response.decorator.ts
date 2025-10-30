@@ -16,12 +16,13 @@ export function ErrorResponse(
     return (
         target: Object,
         propertyKey: string | symbol,
-        descriptor: PropertyDescriptor,
+        _descriptor: PropertyDescriptor,
     ) => {
         const existingErrors: ApiErrorMeta =
             Reflect.getMetadata(
                 API_ERROR_META_KEY,
-                descriptor.value, // No método
+                target,
+                propertyKey
             ) || new Map<number, any>();
 
         if (existingErrors.has(status)) {
@@ -37,7 +38,8 @@ export function ErrorResponse(
         Reflect.defineMetadata(
             API_ERROR_META_KEY,
             existingErrors,
-            descriptor.value,
+            target,
+            propertyKey
         );
     };
 }
