@@ -13,7 +13,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9 # Corrigido para v9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,7 +22,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile # <--- MUDANÇA OBRIGATÓRIA
 
       - name: Run Lint
         run: pnpm run lint
