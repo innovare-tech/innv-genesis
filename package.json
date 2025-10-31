@@ -1,6 +1,6 @@
 {
   "name": "innv-genesis",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Monorepo para o ecossistema @innv",
   "private": true,
   "license": "UNLICENSED",
