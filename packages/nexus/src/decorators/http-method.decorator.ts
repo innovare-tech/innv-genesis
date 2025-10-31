@@ -3,23 +3,19 @@ import 'reflect-metadata';
 export const API_METHOD_META_KEY = Symbol('ApiMethodMeta');
 
 export interface ApiMethodMeta {
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    path: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
 }
 
 const createMethodDecorator =
-    (method: ApiMethodMeta['method']) =>
-        (path = ''): MethodDecorator => {
-            return (
-                target: Object,
-                propertyKey: string | symbol,
-                _descriptor: PropertyDescriptor,
-            ) => {
-                const meta: ApiMethodMeta = { method, path };
+  (method: ApiMethodMeta['method']) =>
+  (path = ''): MethodDecorator => {
+    return (target: Object, propertyKey: string | symbol) => {
+      const meta: ApiMethodMeta = { method, path };
 
-                Reflect.defineMetadata(API_METHOD_META_KEY, meta, target, propertyKey);
-            };
-        };
+      Reflect.defineMetadata(API_METHOD_META_KEY, meta, target, propertyKey);
+    };
+  };
 
 export const Get = createMethodDecorator('GET');
 export const Post = createMethodDecorator('POST');

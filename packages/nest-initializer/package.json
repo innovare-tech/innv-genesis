@@ -39,12 +39,12 @@
   },
   "dependencies": {
     "@innv/nexus": "workspace:*",
-    "tslib": "^2.6.3",
     "cache-manager-redis-store": "3.0.1",
     "compression": "1.8.1",
     "glob": "11.0.3",
     "helmet": "8.1.0",
     "morgan": "^1.10.1",
+    "tslib": "^2.6.3",
     "zod": "4.1.12"
   },
   "peerDependencies": {
@@ -122,6 +122,8 @@
     "@nestjs/testing": "^11.1.7",
     "@nestjs/typeorm": "^11.0.0",
     "@types/compression": "^1.7.5",
+    "@types/express": "^5.0.5",
+    "@types/express-rate-limit": "^6.0.2",
     "@types/jest": "^29.5.14",
     "@types/morgan": "^1.9.10",
     "@types/node": "^18.19.3",

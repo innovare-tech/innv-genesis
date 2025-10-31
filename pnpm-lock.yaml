@@ -32,6 +32,9 @@ importers:
       globals:
         specifier: ^15.0.0
         version: 15.15.0
+      prettier:
+        specifier: ^3.2.5
+        version: 3.6.2
       rimraf:
         specifier: ^5.0.7
         version: 5.0.10
@@ -120,6 +123,12 @@ importers:
       '@types/compression':
         specifier: ^1.7.5
         version: 1.8.1
+      '@types/express':
+        specifier: ^5.0.5
+        version: 5.0.5
+      '@types/express-rate-limit':
+        specifier: ^6.0.2
+        version: 6.0.2(express@5.1.0)
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -911,6 +920,10 @@ packages:
 
   '@types/conventional-commits-parser@5.0.2':
     resolution: {integrity: sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g==}
+
+  '@types/express-rate-limit@6.0.2':
+    resolution: {integrity: sha512-e1xZLOOlxCDvplAGq7rDcXtbdBu2CWRsMjaIu1LVqGxWtKvwr884YE5mPs3IvHeG/OMDhf24oTaqG5T1bV3rBQ==}
+    deprecated: This is a stub types definition. express-rate-limit provides its own type definitions, so you do not need this installed.
 
   '@types/express-serve-static-core@5.1.0':
     resolution: {integrity: sha512-jnHMsrd0Mwa9Cf4IdOzbz543y4XJepXrbia2T4b6+spXC2We3t1y6K44D3mR8XMFSXMCf3/l7rCgddfx7UNVBA==}
@@ -4207,6 +4220,12 @@ snapshots:
   '@types/conventional-commits-parser@5.0.2':
     dependencies:
       '@types/node': 20.19.24
+
+  '@types/express-rate-limit@6.0.2(express@5.1.0)':
+    dependencies:
+      express-rate-limit: 8.2.0(express@5.1.0)
+    transitivePeerDependencies:
+      - express
 
   '@types/express-serve-static-core@5.1.0':
     dependencies:

@@ -9,7 +9,7 @@ import { NexusHttpService } from './nexus-http.service';
  * pelos providers de cliente dinâmicos.
  */
 @Module({
-    providers: [NexusHttpService],
-    exports: [NexusHttpService],
+  providers: [NexusHttpService],
+  exports: [NexusHttpService],
 })
 export class NexusModule {}

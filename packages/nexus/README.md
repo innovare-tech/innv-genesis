@@ -58,10 +58,7 @@ import { ConfigModule } from '@nestjs/config';
 import { NexusModule } from '@innv/nexus';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    NexusModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), NexusModule],
 })
 export class AppModule {}
 ```
@@ -175,16 +172,17 @@ export class UsersService {
 ## 🧩 Referência da API (Decorators)
 
 ### `@ApiClient(options: ApiClientOptions)`
+
 Define um cliente HTTP.  
 **Opções:**
 
-| Opção | Tipo | Obrigatório | Descrição |
-|:------|:------|:-------------|:-----------|
-| baseUrl | string | Sim (ou baseUrlEnvKey) | URL base da API |
-| baseUrlEnvKey | string | Sim (ou baseUrl) | Chave de ambiente para URL |
-| timeout | number | Não | Timeout fixo (ms) |
-| timeoutEnvKey | string | Não | Timeout via variável de ambiente |
-| staticHeaders | Record<string, string> | Não | Headers fixos para todas as requisições |
+| Opção         | Tipo                   | Obrigatório            | Descrição                               |
+| :------------ | :--------------------- | :--------------------- | :-------------------------------------- |
+| baseUrl       | string                 | Sim (ou baseUrlEnvKey) | URL base da API                         |
+| baseUrlEnvKey | string                 | Sim (ou baseUrl)       | Chave de ambiente para URL              |
+| timeout       | number                 | Não                    | Timeout fixo (ms)                       |
+| timeoutEnvKey | string                 | Não                    | Timeout via variável de ambiente        |
+| staticHeaders | Record<string, string> | Não                    | Headers fixos para todas as requisições |
 
 ### Decorators de Método
 

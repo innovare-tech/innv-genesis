@@ -175,7 +175,9 @@
 <a name='L110'></a><a href='#L110'>110</a>
 <a name='L111'></a><a href='#L111'>111</a>
 <a name='L112'></a><a href='#L112'>112</a>
-<a name='L113'></a><a href='#L113'>113</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -209,6 +211,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -287,6 +290,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Injectable, OnModuleInit } from '@nestjs/common';
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { ApiClientOptions } from '../decorators/api-client.decorator';
@@ -295,16 +299,16 @@ import { ApiClientOptions } from '../decorators/api-client.decorator';
  * Interface para a resposta HTTP crua, simplificada.
  */
 export interface NexusHttpResponse&lt;T = any&gt; {
-    data: T;
-    status: number;
-    headers: Record&lt;string, string&gt;;
+  data: T;
+  status: number;
+  headers: Record&lt;string, string&gt;;
 }
 &nbsp;
 export interface NexusHttpError&lt;E = any&gt; {
-    response?: NexusHttpResponse&lt;E&gt;;
-    message: string;
-    isAxiosError: boolean;
-    code?: string;
+  response?: NexusHttpResponse&lt;E&gt;;
+  message: string;
+  isAxiosError: boolean;
+  code?: string;
 }
 &nbsp;
 /**
@@ -315,98 +319,100 @@ export interface NexusHttpError&lt;E = any&gt; {
  */
 @Injectable()
 export class NexusHttpService implements OnModuleInit {
-    private client: AxiosInstance;
+  private client: AxiosInstance;
 &nbsp;
-    constructor() {
-        // O cliente é inicializado sem config base.
-        // O Proxy fornecerá a config a cada chamada.
-        this.client = axios.create();
-    }
+  constructor() {
+    // O cliente é inicializado sem config base.
+    // O Proxy fornecerá a config a cada chamada.
+    this.client = axios.create();
+  }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    onModuleInit(</span>) {
-        // (Opcional) Podemos configurar interceptors globais do axios aqui
-        // por exemplo, para logging, se quisermos.
-    }
+<span class="fstat-no" title="function not covered" >  onModuleInit(</span>) {
+    // (Opcional) Podemos configurar interceptors globais do axios aqui
+    // por exemplo, para logging, se quisermos.
+  }
 &nbsp;
-    /**
-     * Executa uma requisição HTTP.
-     * Agora usando async/await.
-     */
-    public async request&lt;T = any, E = any&gt;(
-        clientOptions: ApiClientOptions,
-        requestConfig: {
-            method: string;
-            url: string;
-            headers?: Record&lt;string, string&gt;;
-            data?: any;
-        },
-    ): Promise&lt;NexusHttpResponse&lt;T&gt;&gt; { // A assinatura de retorno é a mesma
-        const { baseUrl, timeout } = clientOptions;
-        const { method, url, headers, data } = requestConfig;
+  /**
+   * Executa uma requisição HTTP.
+   * Agora usando async/await.
+   */
+  public async request&lt;T = any, E = any&gt;(
+    clientOptions: ApiClientOptions,
+    requestConfig: {
+      method: string;
+      url: string;
+      headers?: Record&lt;string, string&gt;;
+      data?: any;
+    },
+  ): Promise&lt;NexusHttpResponse&lt;T&gt;&gt; {
+    // A assinatura de retorno é a mesma
+    const { baseUrl, timeout } = clientOptions;
+    const { method, url, headers, data } = requestConfig;
 &nbsp;
-        try {
-            const response: AxiosResponse&lt;T&gt; = await this.client.request&lt;T&gt;({
-                baseURL: baseUrl,
-                url: url,
-                method: method,
-                headers: headers,
-                data: data,
-                timeout: timeout,
-            });
+    try {
+      const response: AxiosResponse&lt;T&gt; = await this.client.request&lt;T&gt;({
+        baseURL: baseUrl,
+        url: url,
+        method: method,
+        headers: headers,
+        data: data,
+        timeout: timeout,
+      });
 &nbsp;
-            // Caminho de Sucesso (2xx)
-            return {
-                data: response.data,
-                status: response.status,
-                headers: response.headers as Record&lt;string, string&gt;,
-            };
-        } catch (error) {
-            // Caminho de Erro (4xx, 5xx, timeout, rede)
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError&lt;E&gt;;
+      // Caminho de Sucesso (2xx)
+      return {
+        data: response.data,
+        status: response.status,
+        headers: response.headers as Record&lt;string, string&gt;,
+      };
+    } catch (error) {
+      // Caminho de Erro (4xx, 5xx, timeout, rede)
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError&lt;E&gt;;
 &nbsp;
-                // Se a API respondeu com um erro (4xx/5xx)
-                if (axiosError.response) {
-                    const errResponse: NexusHttpResponse&lt;E&gt; = {
-                        data: axiosError.response.data,
-                        status: axiosError.response.status,
-                        headers: axiosError.response.headers as Record&lt;string, string&gt;,
-                    };
+        // Se a API respondeu com um erro (4xx/5xx)
+        if (axiosError.response) {
+          const errResponse: NexusHttpResponse&lt;E&gt; = {
+            data: axiosError.response.data,
+            status: axiosError.response.status,
+            headers: axiosError.response.headers as Record&lt;string, string&gt;,
+          };
 &nbsp;
-                    throw {
-                        response: errResponse,
-                        message: axiosError.message,
-                        isAxiosError: true,
-                        code: axiosError.code,
-                    } as NexusHttpError&lt;E&gt;;
-                }
-&nbsp;
-                // Se foi um erro de rede, timeout, ou config
-                throw {
-                    response: undefined,
-                    message: axiosError.message,
-                    isAxiosError: true,
-                    code: axiosError.code, // Ex: 'ECONNABORTED' para timeout
-                } as NexusHttpError&lt;E&gt;;
-            }
-&nbsp;
-            // Erro inesperado (não-Axios)
-            throw {
-                response: undefined,
-                message: (error as Error).message || <span class="branch-1 cbranch-no" title="branch not covered" >'Unknown error',</span>
-                isAxiosError: false,
-                code: 'NEXUS_INTERNAL_ERROR'
-            } as NexusHttpError&lt;E&gt;;
+          throw {
+            response: errResponse,
+            message: axiosError.message,
+            isAxiosError: true,
+            code: axiosError.code,
+          } as NexusHttpError&lt;E&gt;;
         }
+&nbsp;
+        // Se foi um erro de rede, timeout, ou config
+        throw {
+          response: undefined,
+          message: axiosError.message,
+          isAxiosError: true,
+          code: axiosError.code, // Ex: 'ECONNABORTED' para timeout
+        } as NexusHttpError&lt;E&gt;;
+      }
+&nbsp;
+      // Erro inesperado (não-Axios)
+      throw {
+        response: undefined,
+        message: (error as Error).message || <span class="branch-1 cbranch-no" title="branch not covered" >'Unknown error',</span>
+        isAxiosError: false,
+        code: 'NEXUS_INTERNAL_ERROR',
+      } as NexusHttpError&lt;E&gt;;
     }
-}</pre></td></tr></table></pre>
+  }
+}
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-30T23:47:52.668Z
+                at 2025-10-31T00:52:07.907Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

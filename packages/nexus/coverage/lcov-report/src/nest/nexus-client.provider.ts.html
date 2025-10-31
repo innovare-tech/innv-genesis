@@ -225,7 +225,15 @@
 <a name='L160'></a><a href='#L160'>160</a>
 <a name='L161'></a><a href='#L161'>161</a>
 <a name='L162'></a><a href='#L162'>162</a>
-<a name='L163'></a><a href='#L163'>163</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
@@ -247,8 +255,6 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -340,6 +346,9 @@
 <span class="cline-any cline-yes">19x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">5x</span>
@@ -356,6 +365,9 @@
 <span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
@@ -366,11 +378,14 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -387,176 +402,185 @@
 <span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Provider, Abstract } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import 'reflect-metadata';
 import {
-    API_CLIENT_META_KEY,
-    ApiClientOptions,
+  API_CLIENT_META_KEY,
+  ApiClientOptions,
 } from '../decorators/api-client.decorator';
 import {
-    API_ERROR_META_KEY,
-    ApiErrorMeta,
+  API_ERROR_META_KEY,
+  ApiErrorMeta,
 } from '../decorators/error-response.decorator';
 import {
-    API_METHOD_META_KEY,
-    ApiMethodMeta,
+  API_METHOD_META_KEY,
+  ApiMethodMeta,
 } from '../decorators/http-method.decorator';
 import {
-    API_PARAM_META_KEY,
-    ApiParamMeta,
+  API_PARAM_META_KEY,
+  ApiParamMeta,
 } from '../decorators/param.decorator';
 import { Err, Ok, Result } from '../result';
 import { NexusHttpError, NexusHttpService } from './nexus-http.service';
-import {
-    transformAndValidate,
-} from './validation.helper';
+import { transformAndValidate } from './validation.helper';
 &nbsp;
 export function createNexusClientProvider&lt;T extends object&gt;(
-    clientClass: Abstract&lt;T&gt;,
+  clientClass: Abstract&lt;T&gt;,
 ): Provider&lt;T&gt; {
-    return {
-        provide: clientClass,
-        inject: [NexusHttpService, { token: ConfigService, optional: true }],
-        useFactory: (
-            httpService: NexusHttpService,
-            configService?: ConfigService,
-        ) =&gt; {
-            const clientOptions: ApiClientOptions = Reflect.getMetadata(
-                API_CLIENT_META_KEY,
-                clientClass,
-            );
+  return {
+    provide: clientClass,
+    inject: [NexusHttpService, { token: ConfigService, optional: true }],
+    useFactory: (
+      httpService: NexusHttpService,
+      configService?: ConfigService,
+    ) =&gt; {
+      const clientOptions: ApiClientOptions = Reflect.getMetadata(
+        API_CLIENT_META_KEY,
+        clientClass,
+      );
 &nbsp;
-            <span class="missing-if-branch" title="if path not taken" >I</span>if (!clientOptions) {
-<span class="cstat-no" title="statement not covered" >                throw new Error(</span>
-                    `[Nexus] Classe ${clientClass.name} não possui o decorator @ApiClient.`,
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!clientOptions) {
+<span class="cstat-no" title="statement not covered" >        throw new Error(</span>
+          `[Nexus] Classe ${clientClass.name} não possui o decorator @ApiClient.`,
+        );
+      }
+&nbsp;
+      const resolvedOptions = { ...clientOptions };
+&nbsp;
+      if (!resolvedOptions.baseUrl &amp;&amp; resolvedOptions.baseUrlEnvKey) {
+        if (!configService) {
+          throw new Error(
+            `[Nexus] ${clientClass.name} usa 'baseUrlEnvKey' mas ConfigService não está disponível.`,
+          );
+        }
+        resolvedOptions.baseUrl = configService.get&lt;string&gt;(
+          resolvedOptions.baseUrlEnvKey,
+        );
+      }
+&nbsp;
+      if (!resolvedOptions.timeout &amp;&amp; resolvedOptions.timeoutEnvKey) {
+        if (configService) {
+          resolvedOptions.timeout = configService.get&lt;number&gt;(
+            resolvedOptions.timeoutEnvKey,
+          );
+        }
+      }
+&nbsp;
+      if (!resolvedOptions.baseUrl) {
+        throw new Error(
+          `[Nexus] ${clientClass.name} não conseguiu resolver a 'baseUrl'.`,
+        );
+      }
+&nbsp;
+      const serviceProxy: Record&lt;
+        string | symbol,
+        (...args: any[]) =&gt; Promise&lt;Result&lt;any, any&gt;&gt;
+      &gt; = {};
+&nbsp;
+      for (const methodName of Object.getOwnPropertyNames(
+        clientClass.prototype,
+      )) {
+        if (methodName === 'constructor') continue;
+&nbsp;
+        const methodMeta: ApiMethodMeta | undefined = Reflect.getMetadata(
+          API_METHOD_META_KEY,
+          clientClass.prototype,
+          methodName,
+        );
+&nbsp;
+        if (methodMeta) {
+          const paramsMeta: ApiParamMeta[] =
+            Reflect.getMetadata(
+              API_PARAM_META_KEY,
+              clientClass.prototype,
+              methodName,
+            ) || [];
+&nbsp;
+          const errorMeta: ApiErrorMeta =
+            Reflect.getMetadata(
+              API_ERROR_META_KEY,
+              clientClass.prototype,
+              methodName,
+            ) || new Map();
+&nbsp;
+          serviceProxy[methodName] = async (...args: any[]) =&gt; {
+            let path = methodMeta.path;
+            const headers = { ...resolvedOptions.staticHeaders };
+            const queryParams = new URLSearchParams();
+            let body: any = undefined;
+&nbsp;
+            for (const param of paramsMeta) {
+              const argValue = args[param.index];
+              if (argValue === undefined) continue;
+              if (param.type === 'path' &amp;&amp; param.name) {
+                path = path.replace(
+                  `:${param.name}`,
+                  encodeURIComponent(argValue),
                 );
+              } else if (param.type === 'query' &amp;&amp; param.name) {
+                queryParams.append(param.name, String(argValue));
+              } else if (param.type === 'body') {
+                body = argValue;
+              } else if (param.type === 'header' &amp;&amp; param.name) {
+                headers[param.name] = String(argValue);
+              }
             }
 &nbsp;
-            const resolvedOptions = { ...clientOptions };
+            const queryString = queryParams.toString();
+            const finalUrl = queryString ? `${path}?${queryString}` : path;
 &nbsp;
-            if (!resolvedOptions.baseUrl &amp;&amp; resolvedOptions.baseUrlEnvKey) {
-                if (!configService) {
-                    throw new Error(
-                        `[Nexus] ${clientClass.name} usa 'baseUrlEnvKey' mas ConfigService não está disponível.`,
+            try {
+              const response = await httpService.request(resolvedOptions, {
+                method: methodMeta.method,
+                url: finalUrl,
+                headers: headers,
+                data: body,
+              });
+              return Ok(response.data, response.status);
+            } catch (error) {
+              const httpError = error as NexusHttpError;
+              if (httpError.isAxiosError &amp;&amp; httpError.response) {
+                const status = httpError.response.status;
+                const errorDtoClass = errorMeta.get(status);
+&nbsp;
+                if (errorDtoClass) {
+                  try {
+                    const validatedErrorData = await transformAndValidate(
+                      httpError.response.data,
+                      errorDtoClass,
+                      status,
                     );
+                    return Err(validatedErrorData, status);
+                  } catch (validationError) {
+                    throw validationError;
+                  }
                 }
-                resolvedOptions.baseUrl = configService.get&lt;string&gt;(
-                    resolvedOptions.baseUrlEnvKey,
-                );
+              }
+&nbsp;
+              const errorMessage =
+                (httpError as unknown as Error)?.message || <span class="branch-1 cbranch-no" title="branch not covered" >String(error);</span>
+              throw new Error(
+                `[Nexus] Erro não tratado em ${clientClass.name}.${methodName}: ${errorMessage}`,
+              );
             }
+          };
+        }
+      }
 &nbsp;
-            if (!resolvedOptions.timeout &amp;&amp; resolvedOptions.timeoutEnvKey) {
-                if (configService) {
-                    resolvedOptions.timeout = configService.get&lt;number&gt;(
-                        resolvedOptions.timeoutEnvKey,
-                    );
-                }
-            }
-&nbsp;
-            if (!resolvedOptions.baseUrl) {
-                throw new Error(
-                    `[Nexus] ${clientClass.name} não conseguiu resolver a 'baseUrl'.`,
-                );
-            }
-&nbsp;
-            const serviceProxy: Record&lt;
-                string | symbol,
-                (...args: any[]) =&gt; Promise&lt;Result&lt;any, any&gt;&gt;
-            &gt; = {};
-&nbsp;
-            for (const methodName of Object.getOwnPropertyNames(
-                clientClass.prototype,
-            )) {
-                if (methodName === 'constructor') continue;
-&nbsp;
-                const methodMeta: ApiMethodMeta | undefined = Reflect.getMetadata(
-                    API_METHOD_META_KEY,
-                    clientClass.prototype,
-                    methodName,
-                );
-&nbsp;
-                if (methodMeta) {
-                    const paramsMeta: ApiParamMeta[] =
-                        Reflect.getMetadata(
-                            API_PARAM_META_KEY,
-                            clientClass.prototype,
-                            methodName,
-                        ) || [];
-&nbsp;
-                    const errorMeta: ApiErrorMeta =
-                        Reflect.getMetadata(
-                            API_ERROR_META_KEY,
-                            clientClass.prototype,
-                            methodName,
-                        ) || new Map();
-&nbsp;
-                    serviceProxy[methodName] = async (...args: any[]) =&gt; {
-                        let path = methodMeta.path;
-                        const headers = { ...resolvedOptions.staticHeaders };
-                        const queryParams = new URLSearchParams();
-                        let body: any = undefined;
-&nbsp;
-                        for (const param of paramsMeta) {
-                            const argValue = args[param.index];
-                            if (argValue === undefined) continue;
-                            if (param.type === 'path' &amp;&amp; param.name) {
-                                path = path.replace(`:${param.name}`, encodeURIComponent(argValue));
-                            } else if (param.type === 'query' &amp;&amp; param.name) {
-                                queryParams.append(param.name, String(argValue));
-                            } else if (param.type === 'body') {
-                                body = argValue;
-                            } else if (param.type === 'header' &amp;&amp; param.name) {
-                                headers[param.name] = String(argValue);
-                            }
-                        }
-&nbsp;
-                        const queryString = queryParams.toString();
-                        const finalUrl = queryString ? `${path}?${queryString}` : path;
-&nbsp;
-                        try {
-                            const response = await httpService.request(resolvedOptions, {
-                                method: methodMeta.method, url: finalUrl, headers: headers, data: body,
-                            });
-                            return Ok(response.data, response.status);
-                        } catch (error) {
-                            const httpError = error as NexusHttpError;
-                            if (httpError.isAxiosError &amp;&amp; httpError.response) {
-                                const status = httpError.response.status;
-                                const errorDtoClass = errorMeta.get(status);
-&nbsp;
-                                if (errorDtoClass) {
-                                    try {
-                                        const validatedErrorData = await transformAndValidate(
-                                            httpError.response.data, errorDtoClass, status,
-                                        );
-                                        return Err(validatedErrorData, status);
-                                    } catch (validationError) {
-                                        throw validationError;
-                                    }
-                                }
-                            }
-&nbsp;
-                            const errorMessage = (httpError as unknown as Error)?.message || <span class="branch-1 cbranch-no" title="branch not covered" >String(error);</span>
-                            throw new Error(
-                                `[Nexus] Erro não tratado em ${clientClass.name}.${methodName}: ${errorMessage}`,
-                            );
-                        }
-                    };
-                }
-            }
-&nbsp;
-            return serviceProxy as T;
-        },
-    };
-}</pre></td></tr></table></pre>
+      return serviceProxy as T;
+    },
+  };
+}
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-30T23:47:52.668Z
+                at 2025-10-31T00:52:07.907Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
