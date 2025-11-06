@@ -1,94 +1,74 @@
 import 'reflect-metadata';
-import { ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import {
-  createMongooseStarter,
-  MongooseStarterOptions,
-} from '../../src/starters';
+import { DynamicModule } from '@nestjs/common';
 
-jest.mock('@nestjs/mongoose', () => ({
-  MongooseModule: {
-    forRootAsync: jest.fn(),
-  },
-}));
+import * as starterModule from '../../src/starters/mongoose.starter';
+import * as utils from '../../src/utils/tryRequire';
 
-const mockedForRootAsync = MongooseModule.forRootAsync as jest.Mock;
+const createMongooseStarter = (starterModule as any)
+  .createMongooseStarter as (opts?: {
+  uri?: string;
+  mongooseModuleOptions?: Record<string, any>;
+}) => DynamicModule;
 
-describe('createMongooseStarter', () => {
-  let mockConfigService: ConfigService;
-  let options: MongooseStarterOptions;
+describe('MongooseStarter (optional)', () => {
+  let tryRequireSpy: jest.SpyInstance;
 
-  beforeEach(() => {
-    mockedForRootAsync.mockClear();
-    jest.clearAllMocks();
-
-    mockConfigService = {
-      get: jest.fn((key: string) => {
-        if (key === 'MONGO_URI') return 'mongodb://default:pass@host/db';
-        if (key === 'CUSTOM_MONGO_URI') return 'mongodb://custom:pass@host/db';
-        return undefined;
-      }),
-    } as unknown as ConfigService;
-
-    options = {};
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should call forRootAsync with correct default options', () => {
-    createMongooseStarter();
+  it('should be no-op (empty DynamicModule) when @nestjs/mongoose or mongoose is missing', () => {
+    tryRequireSpy = jest
+      .spyOn(utils, 'tryRequire')
+      .mockImplementation((name: string) => {
+        return null as any;
+      });
 
-    expect(mockedForRootAsync).toHaveBeenCalledTimes(1);
-    const receivedOptions = mockedForRootAsync.mock.calls[0][0];
-
-    expect(receivedOptions.imports).toEqual([]);
-    expect(receivedOptions.inject).toEqual([ConfigService]);
-    expect(receivedOptions.useFactory).toBeInstanceOf(Function);
-
-    const factory = receivedOptions.useFactory;
-    const factoryResult = factory(mockConfigService);
-    expect(factoryResult).toEqual({
-      uri: 'mongodb://default:pass@host/db',
-    });
-    expect(mockConfigService.get).toHaveBeenCalledWith('MONGO_URI');
+    const dm = createMongooseStarter();
+    expect(dm).toBeDefined();
+    expect(Array.isArray(dm.imports)).toBe(true);
+    expect(dm.imports?.length).toBe(0);
   });
 
-  it('should use custom uriEnvKey when provided', () => {
-    options.uriEnvKey = 'CUSTOM_MONGO_URI';
-    createMongooseStarter(options);
-
-    expect(mockedForRootAsync).toHaveBeenCalledTimes(1);
-    const receivedOptions = mockedForRootAsync.mock.calls[0][0];
-    const factory = receivedOptions.useFactory;
-    const factoryResult = factory(mockConfigService);
-
-    expect(factoryResult.uri).toBe('mongodb://custom:pass@host/db');
-    expect(mockConfigService.get).toHaveBeenCalledWith('CUSTOM_MONGO_URI');
-  });
-
-  it('should merge custom mongooseOptions correctly', () => {
-    options.mongooseOptions = {
-      retryAttempts: 5,
+  it('should return a DynamicModule importing MongooseModule.forRoot when dependencies present', () => {
+    const fakeMongooseModule = {
+      forRoot: jest.fn((uri: string, opts?: any) => ({
+        __mockName: 'MongooseModule.forRoot',
+        uri,
+        opts,
+      })),
     };
-    createMongooseStarter(options);
 
-    expect(mockedForRootAsync).toHaveBeenCalledTimes(1);
-    const receivedOptions = mockedForRootAsync.mock.calls[0][0];
+    tryRequireSpy = jest
+      .spyOn(utils, 'tryRequire')
+      .mockImplementation((name: string) => {
+        if (name === '@nestjs/mongoose') {
+          return { MongooseModule: fakeMongooseModule } as any;
+        }
+        if (name === 'mongoose') {
+          return {} as any;
+        }
+        return null as any;
+      });
 
-    const factory = receivedOptions.useFactory;
-    const factoryResult = factory(mockConfigService);
+    const customOpts = {
+      uri: 'mongodb://127.0.0.1:27017/test-db',
+      mongooseModuleOptions: { useNewUrlParser: true },
+    };
+    const dm = createMongooseStarter(customOpts);
 
-    expect(factoryResult).toEqual({
-      uri: 'mongodb://default:pass@host/db',
-      retryAttempts: 5,
-    });
-  });
+    expect(dm).toBeDefined();
+    expect(Array.isArray(dm.imports)).toBe(true);
+    expect(dm.imports?.length).toBeGreaterThan(0);
 
-  it('should pass inject and imports correctly to forRootAsync', () => {
-    createMongooseStarter();
-    expect(mockedForRootAsync).toHaveBeenCalledTimes(1);
-    const receivedOptions = mockedForRootAsync.mock.calls[0][0];
-
-    expect(receivedOptions.imports).toEqual([]);
-    expect(receivedOptions.inject).toEqual([ConfigService]);
-    expect(receivedOptions.useFactory).toBeInstanceOf(Function);
+    const imported = dm.imports![0] as any;
+    expect(imported).toBeDefined();
+    expect(fakeMongooseModule.forRoot).toHaveBeenCalledWith(
+      customOpts.uri,
+      customOpts.mongooseModuleOptions,
+    );
+    expect(imported).toHaveProperty('__mockName', 'MongooseModule.forRoot');
+    expect(imported.uri).toBe(customOpts.uri);
+    expect(imported.opts).toEqual(customOpts.mongooseModuleOptions);
   });
 });

@@ -46,19 +46,26 @@ import {
   TerminusHealthCheckModule,
   TerminusHealthCheckOptions,
 } from '../features';
-import { RateLimiterPlugin, RequestLoggerPlugin } from '../plugins';
 import {
-  CachingStarterOptions,
+  CachingModuleOptions,
   createCachingStarter,
   createMongooseStarter,
   createTypeOrmStarter,
-  MongooseStarterOptions,
-  TypeOrmStarterOptions,
+  MongooseModuleOptions,
 } from '../starters';
 import {
   ResponseMapper,
   ResponsePatternInterceptor,
 } from '../interceptors/response-pattern.interceptor';
+import {
+  createIndexPageController,
+  IndexPageOptions,
+} from '../features/index-page.factory';
+import { NestApplicationOptions } from '@nestjs/common/interfaces/nest-application-options.interface';
+import { RequestLoggerPlugin } from '../plugins/request-logger.plugin';
+import { RateLimiterPlugin } from '../plugins/rate-limiter.plugin';
+import { TypeOrmStarterOptions } from '../starters/typeorm.starter';
+import { ServerVariableObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 type AnyModule =
   | Type
@@ -87,6 +94,15 @@ export type SwaggerDocumentTags = {
 };
 
 /**
+ * Representa um servidor na especificação Swagger (OpenAPI).
+ */
+export type SwaggerServer = {
+  url: string;
+  description?: string;
+  variables?: Record<string, ServerVariableObject>;
+};
+
+/**
  * Opções para a configuração do Swagger (OpenAPI).
  */
 export type SwaggerOptions = {
@@ -97,6 +113,7 @@ export type SwaggerOptions = {
   path?: string;
   documentOptions?: SwaggerDocumentOptions;
   customOptions?: SwaggerCustomOptions;
+  servers?: SwaggerServer[];
 };
 
 /**
@@ -114,6 +131,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   private app!: T;
   private readonly module: Type;
   private readonly adapter?: AbstractHttpAdapter;
+  private readonly options?: NestApplicationOptions;
   private readonly logger = new Logger(AppInitializer.name);
 
   private port: number = parseInt(process.env.PORT || '3000', 10);
@@ -134,10 +152,16 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   private readonly nexusClientProviders: Provider[] = [];
   private readonly globalInterceptors: NestInterceptor[] = [];
   private readonly factoryGeneratedControllers: Type[] = [];
+  private readonly excludedRoutes: string[] = [];
 
-  private constructor(module: Type, adapter?: AbstractHttpAdapter) {
+  private constructor(
+    module: Type,
+    adapter?: AbstractHttpAdapter,
+    options?: NestApplicationOptions,
+  ) {
     this.module = module;
     this.adapter = adapter;
+    this.options = options;
   }
 
   /**
@@ -195,12 +219,14 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   public static async bootstrap<T extends INestApplication = INestApplication>(
     module: Type,
     configurator: AppConfigurator<T>,
+    options?: NestApplicationOptions,
   ): Promise<void>;
 
   public static async bootstrap<T extends INestApplication = INestApplication>(
     module: Type,
     adapter: AbstractHttpAdapter,
     configurator: AppConfigurator<T>,
+    options?: NestApplicationOptions,
   ): Promise<void>;
 
   /**
@@ -208,15 +234,22 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
    * @param module O módulo raiz da aplicação (ex: AppModule).
    * @param adapterOrConfigurator O adaptador HTTP ou a função de configuração.
    * @param configurator Uma função de callback que recebe o builder para aplicar as configurações.
+   * @param options Opções adicionais para a aplicação NestJS.
    */
   public static async bootstrap<T extends INestApplication = INestApplication>(
     module: Type,
     adapterOrConfigurator: AbstractHttpAdapter | AppConfigurator<T>,
-    configurator?: AppConfigurator<T>,
+    configurator?: AppConfigurator<T> | NestApplicationOptions,
+    options?: NestApplicationOptions,
   ): Promise<void> {
-    const isExpress = typeof adapterOrConfigurator === 'function';
-    const adapter = isExpress ? undefined : adapterOrConfigurator;
-    const finalConfigurator = isExpress ? adapterOrConfigurator : configurator;
+    const isConfiguratorOnly = typeof adapterOrConfigurator === 'function';
+    const adapter = isConfiguratorOnly ? undefined : adapterOrConfigurator;
+    const finalConfigurator = isConfiguratorOnly
+      ? adapterOrConfigurator
+      : (configurator as AppConfigurator<T> | undefined);
+    const finalOptions = isConfiguratorOnly
+      ? (configurator as NestApplicationOptions | undefined)
+      : options;
 
     if (!finalConfigurator) {
       throw new TypeError(
@@ -224,7 +257,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
       );
     }
 
-    const initializer = new AppInitializer<T>(module, adapter);
+    const initializer = new AppInitializer<T>(module, adapter, finalOptions);
     try {
       initializer.logger.log(
         'Iniciando o processo de bootstrap da aplicação...',
@@ -451,7 +484,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
    *
    * @param options Opções para o "Starter" de Mongoose.
    */
-  public withMongoose(options: MongooseStarterOptions = {}): this {
+  public withMongoose(options: MongooseModuleOptions = {}): this {
     const starter = createMongooseStarter(options);
 
     this.featureModules.push(starter.module);
@@ -466,7 +499,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
    *
    * @param options Opções para o "Starter" de Cache.
    */
-  public withCaching(options: CachingStarterOptions = {}): this {
+  public withCaching(options: CachingModuleOptions = {}): this {
     const cacheDynamicModule = createCachingStarter(options);
 
     this.featureModules.push(cacheDynamicModule);
@@ -491,27 +524,41 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   public withAutoDiscovery(options: { basePath: string }): this {
     const reflector = new Reflector();
 
-    // 3. ESTA LINHA AGORA RECEBE OS 'nexusClients'
     this.autoDiscoveredComponents = discoverComponents(
       options.basePath,
       reflector,
     );
 
-    // 4. ADICIONE ESTE BLOCO LÓGICO
-    // Se encontramos algum cliente Nexus, vamos configurá-los.
+    this.logger.log(
+      `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.providers.length} providers e ${this.autoDiscoveredComponents.controllers.length} controllers.`,
+    );
+
     if (this.autoDiscoveredComponents.nexusClients.length > 0) {
       this.logger.log(
         `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.nexusClients.length} clientes Nexus.`,
       );
 
-      // Garante que o NexusModule (com o NexusHttpService) seja importado
       this.featureModules.push(NexusModule);
 
-      // Cria os providers dinâmicos para cada cliente
       for (const clientClass of this.autoDiscoveredComponents.nexusClients) {
         this.nexusClientProviders.push(createNexusClientProvider(clientClass));
       }
     }
+
+    return this;
+  }
+
+  /**
+   * Cria um controller dinâmico para servir um arquivo HTML estático (ex: index.html).
+   * O arquivo deve estar em um diretório 'public' na raiz do projeto.
+   * @param options Opções para configurar o path da rota e o nome do arquivo.
+   */
+  public withIndexPage(options: IndexPageOptions = {}): this {
+    const controllerPath = options.path ?? '/';
+    const IndexController = createIndexPageController(options);
+
+    this.factoryGeneratedControllers.push(IndexController);
+    this.excludedRoutes.push(controllerPath);
 
     return this;
   }
@@ -559,10 +606,17 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
     class DynamicRootModule {}
 
     this.app = this.adapter
-      ? await NestFactory.create<T>(DynamicRootModule, this.adapter)
-      : await NestFactory.create<T>(DynamicRootModule);
+      ? await NestFactory.create<T>(
+          DynamicRootModule,
+          this.adapter,
+          this.options,
+        )
+      : await NestFactory.create<T>(DynamicRootModule, this.options);
 
-    if (this.globalPrefix) this.app.setGlobalPrefix(this.globalPrefix);
+    if (this.globalPrefix)
+      this.app.setGlobalPrefix(this.globalPrefix, {
+        exclude: this.excludedRoutes,
+      });
     if (this.corsOptions) this.app.enableCors(this.corsOptions);
 
     if (this.versioningOptions) {
@@ -583,10 +637,18 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
     }
 
     if (this.swaggerOptions) {
-      const documentBuilder = new DocumentBuilder()
+      let documentBuilder = new DocumentBuilder()
         .setTitle(this.swaggerOptions.title)
         .setDescription(this.swaggerOptions.description)
         .setVersion(this.swaggerOptions.version);
+
+      for (const server of this.swaggerOptions.servers ?? []) {
+        documentBuilder = documentBuilder.addServer(
+          server.url,
+          server.description,
+          server.variables,
+        );
+      }
 
       for (const tag of this.swaggerOptions.tags ?? []) {
         documentBuilder.addTag(tag.name, tag.description);

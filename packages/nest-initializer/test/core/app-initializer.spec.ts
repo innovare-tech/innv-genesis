@@ -30,8 +30,6 @@ import {
   AppInitializerPlugin,
   CachingStarterOptions,
   MongooseStarterOptions,
-  RateLimiterPlugin,
-  RequestLoggerPlugin,
   SwaggerOptions,
   TerminusHealthCheckOptions,
   TypeOrmStarterOptions,
@@ -91,6 +89,8 @@ jest.mock('@innv/nexus', () => ({
 }));
 
 import { createNexusClientProvider, NexusModule } from '@innv/nexus';
+import { RequestLoggerPlugin } from '../../src/plugins/request-logger.plugin';
+import { RateLimiterPlugin } from '../../src/plugins/rate-limiter.plugin';
 
 const mockCreateNexusClientProvider = createNexusClientProvider as jest.Mock;
 
@@ -574,7 +574,9 @@ describe('AppInitializer', () => {
 
       await initializer['listen']();
 
-      expect(mockNestApp.setGlobalPrefix).toHaveBeenCalledWith('/api/v2');
+      expect(mockNestApp.setGlobalPrefix).toHaveBeenCalledWith('/api/v2', {
+        exclude: [],
+      });
       expect(mockNestApp.enableCors).toHaveBeenCalledWith({
         origin: 'test.com',
       });
