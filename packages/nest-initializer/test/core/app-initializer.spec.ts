@@ -574,7 +574,9 @@ describe('AppInitializer', () => {
 
       await initializer['listen']();
 
-      expect(mockNestApp.setGlobalPrefix).toHaveBeenCalledWith('/api/v2');
+      expect(mockNestApp.setGlobalPrefix).toHaveBeenCalledWith('/api/v2', {
+        exclude: [],
+      });
       expect(mockNestApp.enableCors).toHaveBeenCalledWith({
         origin: 'test.com',
       });
