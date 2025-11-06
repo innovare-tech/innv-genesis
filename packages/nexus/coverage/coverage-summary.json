@@ -1,10 +1,57 @@
-{"total": {"lines":{"total":144,"covered":141,"skipped":0,"pct":97.91},"statements":{"total":152,"covered":149,"skipped":0,"pct":98.02},"functions":{"total":21,"covered":20,"skipped":0,"pct":95.23},"branches":{"total":60,"covered":55,"skipped":0,"pct":91.66},"branchesTrue":{"total":0,"covered":0,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/result.ts": {"lines":{"total":2,"covered":2,"skipped":0,"pct":100},"functions":{"total":2,"covered":2,"skipped":0,"pct":100},"statements":{"total":6,"covered":6,"skipped":0,"pct":100},"branches":{"total":0,"covered":0,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/api-client.decorator.ts": {"lines":{"total":7,"covered":7,"skipped":0,"pct":100},"functions":{"total":2,"covered":2,"skipped":0,"pct":100},"statements":{"total":7,"covered":7,"skipped":0,"pct":100},"branches":{"total":3,"covered":3,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/error-response.decorator.ts": {"lines":{"total":9,"covered":9,"skipped":0,"pct":100},"functions":{"total":2,"covered":2,"skipped":0,"pct":100},"statements":{"total":9,"covered":9,"skipped":0,"pct":100},"branches":{"total":3,"covered":3,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/http-method.decorator.ts": {"lines":{"total":12,"covered":12,"skipped":0,"pct":100},"functions":{"total":3,"covered":3,"skipped":0,"pct":100},"statements":{"total":12,"covered":12,"skipped":0,"pct":100},"branches":{"total":1,"covered":1,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/param.decorator.ts": {"lines":{"total":14,"covered":14,"skipped":0,"pct":100},"functions":{"total":3,"covered":3,"skipped":0,"pct":100},"statements":{"total":14,"covered":14,"skipped":0,"pct":100},"branches":{"total":5,"covered":5,"skipped":0,"pct":100}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/nest/nexus-client.provider.ts": {"lines":{"total":64,"covered":63,"skipped":0,"pct":98.43},"functions":{"total":3,"covered":3,"skipped":0,"pct":100},"statements":{"total":66,"covered":65,"skipped":0,"pct":98.48},"branches":{"total":38,"covered":36,"skipped":0,"pct":94.73}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/nest/nexus-http.service.ts": {"lines":{"total":16,"covered":16,"skipped":0,"pct":100},"functions":{"total":3,"covered":2,"skipped":0,"pct":66.66},"statements":{"total":18,"covered":18,"skipped":0,"pct":100},"branches":{"total":4,"covered":3,"skipped":0,"pct":75}}
-,"/home/kelvin/development/innv-genesis/packages/nexus/src/nest/validation.helper.ts": {"lines":{"total":20,"covered":18,"skipped":0,"pct":90},"functions":{"total":3,"covered":3,"skipped":0,"pct":100},"statements":{"total":20,"covered":18,"skipped":0,"pct":90},"branches":{"total":6,"covered":4,"skipped":0,"pct":66.66}}
+{
+  "total": {
+    "lines": { "total": 154, "covered": 142, "skipped": 0, "pct": 92.2 },
+    "statements": { "total": 162, "covered": 150, "skipped": 0, "pct": 92.59 },
+    "functions": { "total": 21, "covered": 20, "skipped": 0, "pct": 95.23 },
+    "branches": { "total": 63, "covered": 55, "skipped": 0, "pct": 87.3 },
+    "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/result.ts": {
+    "lines": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 6, "covered": 6, "skipped": 0, "pct": 100 },
+    "branches": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/api-client.decorator.ts": {
+    "lines": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 7, "covered": 7, "skipped": 0, "pct": 100 },
+    "branches": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/error-response.decorator.ts": {
+    "lines": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "functions": { "total": 2, "covered": 2, "skipped": 0, "pct": 100 },
+    "statements": { "total": 9, "covered": 9, "skipped": 0, "pct": 100 },
+    "branches": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/http-method.decorator.ts": {
+    "lines": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 12, "covered": 12, "skipped": 0, "pct": 100 },
+    "branches": { "total": 1, "covered": 1, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/decorators/param.decorator.ts": {
+    "lines": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 14, "covered": 14, "skipped": 0, "pct": 100 },
+    "branches": { "total": 5, "covered": 5, "skipped": 0, "pct": 100 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/nest/nexus-client.provider.ts": {
+    "lines": { "total": 74, "covered": 64, "skipped": 0, "pct": 86.48 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 76, "covered": 66, "skipped": 0, "pct": 86.84 },
+    "branches": { "total": 41, "covered": 36, "skipped": 0, "pct": 87.8 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/nest/nexus-http.service.ts": {
+    "lines": { "total": 16, "covered": 16, "skipped": 0, "pct": 100 },
+    "functions": { "total": 3, "covered": 2, "skipped": 0, "pct": 66.66 },
+    "statements": { "total": 18, "covered": 18, "skipped": 0, "pct": 100 },
+    "branches": { "total": 4, "covered": 3, "skipped": 0, "pct": 75 }
+  },
+  "/home/kelvin/development/innv-genesis/packages/nexus/src/nest/validation.helper.ts": {
+    "lines": { "total": 20, "covered": 18, "skipped": 0, "pct": 90 },
+    "functions": { "total": 3, "covered": 3, "skipped": 0, "pct": 100 },
+    "statements": { "total": 20, "covered": 18, "skipped": 0, "pct": 90 },
+    "branches": { "total": 6, "covered": 4, "skipped": 0, "pct": 66.66 }
+  }
 }

@@ -8,10 +8,12 @@ import {
 } from '@nestjs/terminus';
 
 import * as terminusHealthCheckModule from './terminus-health-check.module';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 export const HEALTH_CHECK_OPTIONS = 'HEALTH_CHECK_OPTIONS';
 
 @Controller('health')
+@ApiExcludeController()
 export class HealthController {
   constructor(
     @Inject(HEALTH_CHECK_OPTIONS)
