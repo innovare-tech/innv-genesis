@@ -19,9 +19,9 @@ Diga adeus ao boilerplate repetitivo no `main.ts` e `AppModule`!
 - **Configuração Segura (Fail-Fast):** Valide variáveis de ambiente com `class-validator`. Sem mais erros em runtime!
 - **Auto-Discovery ("Component Scanning"):** Detecta e registra automaticamente `@Injectable()` e `@Controller()`.
 - **Produção Pronta por Padrão:**
-    - Presets para desenvolvimento e produção (`useDevelopmentDefaults`, `useProductionDefaults`);
-    - Helmet, Compressão, Graceful Shutdown e Métricas Prometheus (`.withMetrics`);
-    - Health Checks (`.withHealthCheck`).
+  - Presets para desenvolvimento e produção (`useDevelopmentDefaults`, `useProductionDefaults`);
+  - Helmet, Compressão, Graceful Shutdown e Métricas Prometheus (`.withMetrics`);
+  - Health Checks (`.withHealthCheck`).
 - **Extensível:** Sistema de Plugins (`.withPlugin`) para lógicas customizadas.
 - **Flexível:** Suporte nativo a Express e Fastify.
 
@@ -53,6 +53,7 @@ yarn add --dev @types/compression @types/helmet
 ## 🚀 Quick Start (Exemplo Completo)
 
 ### 1️⃣ Defina seu Schema de Configuração
+
 `src/config/env.schema.ts`:
 
 ```ts
@@ -118,9 +119,9 @@ async function bootstrap() {
         builder.useProductionDefaults();
       });
 
-      // Exemplos extras:
-      // .useGlobalGuard(JwtAuthGuard)
-      // .withPlugin(new MyCustomPlugin())
+    // Exemplos extras:
+    // .useGlobalGuard(JwtAuthGuard)
+    // .withPlugin(new MyCustomPlugin())
   });
 }
 
@@ -135,13 +136,13 @@ Pronto! Sua aplicação NestJS está configurada com **validação, banco, cache
 
 ### 🔧 Configuração Core
 
-| Método | Descrição |
-|--------|------------|
-| `AppInitializer.bootstrap(AppModule, configurator)` | Ponto de entrada principal. |
-| `onPort(port)` | Define a porta. |
-| `withGlobalPrefix(prefix)` | Prefixo global para rotas. |
-| `withVersioning(options)` | Configura versionamento de API. |
-| `withCors(options)` | Habilita CORS. |
+| Método                                              | Descrição                       |
+| --------------------------------------------------- | ------------------------------- |
+| `AppInitializer.bootstrap(AppModule, configurator)` | Ponto de entrada principal.     |
+| `onPort(port)`                                      | Define a porta.                 |
+| `withGlobalPrefix(prefix)`                          | Prefixo global para rotas.      |
+| `withVersioning(options)`                           | Configura versionamento de API. |
+| `withCors(options)`                                 | Habilita CORS.                  |
 
 ---
 
@@ -167,6 +168,7 @@ Todos configuram seus módulos respectivos (`TypeOrmModule`, `MongooseModule`, `
 
 `withAutoDiscovery({ basePath })`  
 Varre o diretório e registra automaticamente:
+
 - `@Injectable()` como providers
 - `@Controller()` como controllers
 
@@ -176,23 +178,23 @@ Ignora `*.module.*`, `*.spec.*`, `node_modules`, `features`, `plugins`.
 
 ### 🧱 Pipeline Global
 
-| Método | Função |
-|--------|--------|
-| `withValidationPipe()` | Registra `ValidationPipe` global. |
-| `useGlobalPipe(pipe)` | Pipe customizado global. |
-| `useGlobalFilter(filter)` | Filtro de exceção global. |
-| `useGlobalGuard(guard)` | Guard global. |
-| `useGlobalInterceptor(interceptor)` | Interceptor global. |
-| `withClassSerializer()` | Ativa `ClassSerializerInterceptor`. |
+| Método                              | Função                              |
+| ----------------------------------- | ----------------------------------- |
+| `withValidationPipe()`              | Registra `ValidationPipe` global.   |
+| `useGlobalPipe(pipe)`               | Pipe customizado global.            |
+| `useGlobalFilter(filter)`           | Filtro de exceção global.           |
+| `useGlobalGuard(guard)`             | Guard global.                       |
+| `useGlobalInterceptor(interceptor)` | Interceptor global.                 |
+| `withClassSerializer()`             | Ativa `ClassSerializerInterceptor`. |
 
 ---
 
 ### 🩺 Observabilidade ("Actuator")
 
-| Método | Descrição |
-|--------|------------|
+| Método                     | Descrição                                          |
+| -------------------------- | -------------------------------------------------- |
 | `withHealthCheck(options)` | Cria endpoint `/health` usando `@nestjs/terminus`. |
-| `withMetrics()` | Cria endpoint `/metrics` no formato Prometheus. |
+| `withMetrics()`            | Cria endpoint `/metrics` no formato Prometheus.    |
 
 Suporte nativo a métricas HTTP (latência, contadores, etc).
 
@@ -200,38 +202,38 @@ Suporte nativo a métricas HTTP (latência, contadores, etc).
 
 ### 🧰 Middlewares e Hooks
 
-| Método | Ação |
-|--------|------|
-| `withGracefulShutdown()` | Habilita `enableShutdownHooks()`. |
-| `useHelmet()` | Adiciona `helmet()` para segurança. |
-| `enableCompression()` | Adiciona `compression()` para gzip. |
+| Método                   | Ação                                |
+| ------------------------ | ----------------------------------- |
+| `withGracefulShutdown()` | Habilita `enableShutdownHooks()`.   |
+| `useHelmet()`            | Adiciona `helmet()` para segurança. |
+| `enableCompression()`    | Adiciona `compression()` para gzip. |
 
 ---
 
 ### 📘 Swagger (OpenAPI)
 
-| Método | Descrição |
-|--------|------------|
-| `withSwagger(options)` | Configura documentação Swagger. |
-| `withAdvancedSwaggerUI()` | Tema escuro e UI aprimorada. |
+| Método                    | Descrição                       |
+| ------------------------- | ------------------------------- |
+| `withSwagger(options)`    | Configura documentação Swagger. |
+| `withAdvancedSwaggerUI()` | Tema escuro e UI aprimorada.    |
 
 ---
 
 ### 🧩 Extensibilidade
 
-| Método | Descrição |
-|--------|------------|
-| `withPlugin(plugin)` | Adiciona plugins customizados. |
-| `when(condition, fn)` | Executa blocos condicionais. |
+| Método                | Descrição                      |
+| --------------------- | ------------------------------ |
+| `withPlugin(plugin)`  | Adiciona plugins customizados. |
+| `when(condition, fn)` | Executa blocos condicionais.   |
 
 ---
 
 ### 🪄 Presets
 
-| Método | Descrição |
-|--------|------------|
-| `useDevelopmentDefaults(swaggerOptions)` | Atalho para Swagger + Logger. |
-| `useProductionDefaults()` | Atalho para Helmet, Compression, Shutdown e RateLimiter. |
+| Método                                   | Descrição                                                |
+| ---------------------------------------- | -------------------------------------------------------- |
+| `useDevelopmentDefaults(swaggerOptions)` | Atalho para Swagger + Logger.                            |
+| `useProductionDefaults()`                | Atalho para Helmet, Compression, Shutdown e RateLimiter. |
 
 ---
 
