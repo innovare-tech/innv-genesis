@@ -1,46 +1,55 @@
-import { CacheModule } from '@nestjs/cache-manager';
-import { ConfigService } from '@nestjs/config';
-import { redisStore } from 'cache-manager-redis-store';
+import { DynamicModule, Module, Logger } from '@nestjs/common';
+import { tryRequire } from '../utils/tryRequire';
 
-/**
- * Opções para o "Starter" de Cache (Redis).
- */
-export interface CachingStarterOptions {
-  /**
-   * Chave do .env que contém a URL de conexão com o Redis.
-   * (Padrão: 'REDIS_URL')
-   */
-  redisUrlEnvKey?: string;
-  /**
-   * Tempo de vida (TTL) padrão para os itens em cache, em segundos.
-   * (Padrão: 300 segundos / 5 minutos)
-   */
-  defaultTtlInSeconds?: number;
-}
+export type CachingModuleOptions = Record<string, any>;
 
-/**
- * Cria o módulo dinâmico para o "Starter" de Cache.
- * Configura o CacheModule para ser global e usar o Redis.
- */
-export function createCachingStarter(options: CachingStarterOptions = {}) {
-  const { redisUrlEnvKey = 'REDIS_URL', defaultTtlInSeconds = 300 } = options;
+@Module({})
+export class CachingStarterModule {}
 
-  return CacheModule.registerAsync({
-    isGlobal: true,
+export function createCachingStarter(
+  options: {
+    ttl?: number;
+    max?: number;
+    store?: any;
+    cachingModuleOptions?: CachingModuleOptions;
+  } = {},
+): DynamicModule {
+  const logger = new Logger('CachingStarter');
 
-    imports: [],
+  const nestCache = tryRequire<typeof import('@nestjs/cache-manager')>(
+    '@nestjs/cache-manager',
+  );
+  const cacheManager = tryRequire<any>('cache-manager');
 
-    inject: [ConfigService],
+  if (!nestCache || !cacheManager) {
+    logger.warn(
+      '[nest-initializer] cache-manager ou @nestjs/cache-manager não encontrados — CachingStarter será ignorado.',
+    );
 
-    useFactory: async (configService: ConfigService) => {
-      const store = await redisStore({
-        url: configService.get<string>(redisUrlEnvKey),
-      });
+    return {
+      module: CachingStarterModule,
+      imports: [],
+      providers: [],
+      exports: [],
+    };
+  }
 
-      return {
-        store: () => store,
-        ttl: defaultTtlInSeconds,
-      };
-    },
-  });
+  const { CacheModule } = nestCache;
+
+  const defaultOpts = {
+    ttl: 5, // seconds
+    max: 100,
+  };
+
+  const finalOpts = {
+    ...defaultOpts,
+    ...(options.cachingModuleOptions || { ttl: options.ttl, max: options.max }),
+  };
+
+  return {
+    module: CachingStarterModule,
+    imports: [CacheModule.register(finalOpts)],
+    providers: [],
+    exports: [],
+  };
 }
