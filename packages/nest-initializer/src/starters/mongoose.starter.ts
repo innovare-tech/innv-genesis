@@ -1,41 +1,47 @@
-import { ConfigService } from '@nestjs/config';
-import { MongooseModule, MongooseModuleOptions } from '@nestjs/mongoose';
+import { DynamicModule, Module, Logger } from '@nestjs/common';
+import { tryRequire } from '../utils/tryRequire';
 
-/**
- * Opções para o "Starter" de Mongoose (MongoDB).
- */
-export interface MongooseStarterOptions {
-  /**
-   * Chave do .env que contém a URI de conexão com o MongoDB.
-   * (Padrão: 'MONGO_URI')
-   */
-  uriEnvKey?: string;
-  /**
-   * Permite sobrescrever qualquer outra opção de configuração do Mongoose
-   * (ex: { retryAttempts: 2 }).
-   */
-  mongooseOptions?: Omit<MongooseModuleOptions, 'uri'>;
-}
+export type MongooseModuleOptions = Record<string, any>;
 
-/**
- * Cria o módulo dinâmico para o "Starter" de Mongoose.
- * Configura o MongooseModule para ser global e usar a URI do .env.
- */
-export function createMongooseStarter(options: MongooseStarterOptions = {}) {
-  const { uriEnvKey = 'MONGO_URI', mongooseOptions = {} } = options;
+@Module({})
+export class MongooseStarterModule {}
 
-  const mongooseDynamicModule = MongooseModule.forRootAsync({
-    imports: [],
-    inject: [ConfigService],
+export function createMongooseStarter(
+  options: {
+    uri?: string;
+    mongooseModuleOptions?: MongooseModuleOptions;
+  } = {},
+): DynamicModule {
+  const logger = new Logger('MongooseStarter');
 
-    useFactory: (configService: ConfigService): MongooseModuleOptions => ({
-      uri: configService.get<string>(uriEnvKey),
-      ...mongooseOptions,
-    }),
-  });
+  const nestMongoose =
+    tryRequire<typeof import('@nestjs/mongoose')>('@nestjs/mongoose');
+  const mongoose = tryRequire<any>('mongoose');
+
+  if (!nestMongoose || !mongoose) {
+    logger.warn(
+      '[nest-initializer] mongoose ou @nestjs/mongoose não encontrados — MongooseStarter será ignorado.',
+    );
+
+    return {
+      module: MongooseStarterModule,
+      imports: [],
+      providers: [],
+      exports: [],
+    };
+  }
+
+  const { MongooseModule } = nestMongoose;
+
+  const uri =
+    options.uri ??
+    process.env.MONGODB_URI ??
+    'mongodb://localhost:27017/default';
 
   return {
-    module: mongooseDynamicModule,
-    plugins: [],
+    module: MongooseStarterModule,
+    imports: [MongooseModule.forRoot(uri, options.mongooseModuleOptions || {})],
+    providers: [],
+    exports: [],
   };
 }

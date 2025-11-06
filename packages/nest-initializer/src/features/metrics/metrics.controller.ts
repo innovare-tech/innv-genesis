@@ -1,14 +1,10 @@
 import { Controller, Get, Inject, Res } from '@nestjs/common';
-import { Registry } from 'prom-client';
 
 import { METRICS_REGISTRY } from './metrics.tokens';
 
 @Controller('metrics')
 export class MetricsController {
-  constructor(
-    @Inject(METRICS_REGISTRY)
-    private readonly registry: Registry,
-  ) {}
+  constructor(@Inject(METRICS_REGISTRY) private readonly registry: any) {}
 
   @Get()
   async getMetrics(@Res() res: any) {
