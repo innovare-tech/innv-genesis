@@ -1,105 +1,66 @@
 import 'reflect-metadata';
-import { ConfigService } from '@nestjs/config';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
+import { DynamicModule } from '@nestjs/common';
+import * as starterModule from '../../src/starters/caching.starter';
+import * as utils from '../../src/utils/tryRequire';
 
-import {
-  CachingStarterOptions,
-  createCachingStarter,
-} from '../../src/starters/caching.starter';
+const createCachingStarter = (starterModule as any)
+  .createCachingStarter as (opts?: {
+  ttl?: number;
+  max?: number;
+  cachingModuleOptions?: Record<string, any>;
+}) => DynamicModule;
 
-jest.mock('cache-manager-redis-store', () => ({
-  redisStore: jest.fn(),
-}));
+describe('CachingStarter (optional)', () => {
+  let tryRequireSpy: jest.SpyInstance;
 
-const mockedRedisStore = redisStore as jest.Mock;
-
-jest.mock('@nestjs/cache-manager', () => ({
-  CacheModule: {
-    registerAsync: jest.fn((options) => ({
-      __dynamicModule: true,
-      options,
-    })),
-  },
-}));
-
-describe('createCachingStarter', () => {
-  let mockConfigService: ConfigService;
-  let options: CachingStarterOptions;
-  const mockStoreInstance = { store: 'mockRedisStoreInstance' };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    mockedRedisStore.mockResolvedValue(mockStoreInstance);
-
-    mockConfigService = {
-      get: jest.fn((key: string) => {
-        if (key === 'REDIS_URL') return 'redis://default:6379';
-        if (key === 'CUSTOM_REDIS_URL') return 'redis://custom:6380';
-        return undefined;
-      }),
-    } as unknown as ConfigService;
-
-    options = {};
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should return a dynamic module configured correctly with default options', async () => {
-    const result = createCachingStarter();
-    expect(result).toHaveProperty('__dynamicModule', true);
-    const registerAsyncOptions = (result as any).options;
+  it('should be no-op (empty DynamicModule) when @nestjs/cache-manager or cache-manager is missing', () => {
+    tryRequireSpy = jest
+      .spyOn(utils, 'tryRequire')
+      .mockImplementation(() => null as any);
 
-    expect(registerAsyncOptions.isGlobal).toBe(true);
-    expect(registerAsyncOptions.imports).toEqual([]);
-    expect(registerAsyncOptions.inject).toEqual([ConfigService]);
-    expect(registerAsyncOptions.useFactory).toBeInstanceOf(Function);
-
-    const factoryResult =
-      await registerAsyncOptions.useFactory(mockConfigService);
-
-    expect(mockedRedisStore).toHaveBeenCalledTimes(1);
-    expect(mockedRedisStore).toHaveBeenCalledWith({
-      url: 'redis://default:6379',
-    });
-    expect(mockConfigService.get).toHaveBeenCalledWith('REDIS_URL');
-
-    expect(factoryResult).toHaveProperty('ttl', 300);
-    expect(factoryResult).toHaveProperty('store');
-    expect(typeof factoryResult.store).toBe('function');
-    expect(factoryResult.store()).toBe(mockStoreInstance);
+    const dm = createCachingStarter();
+    expect(dm).toBeDefined();
+    expect(Array.isArray(dm.imports)).toBe(true);
+    expect(dm.imports?.length).toBe(0);
   });
 
-  it('should use custom redisUrlEnvKey when provided', async () => {
-    options.redisUrlEnvKey = 'CUSTOM_REDIS_URL';
-    const result = createCachingStarter(options);
-    const registerAsyncOptions = (result as any).options;
-    await registerAsyncOptions.useFactory(mockConfigService);
+  it('should return a DynamicModule importing CacheModule.register when dependencies present', () => {
+    const fakeCacheModule = {
+      register: jest.fn((opts: any) => ({
+        __mockName: 'CacheModule.register',
+        opts,
+      })),
+    };
 
-    expect(mockConfigService.get).toHaveBeenCalledWith('CUSTOM_REDIS_URL');
-    expect(mockedRedisStore).toHaveBeenCalledWith({
-      url: 'redis://custom:6380',
-    });
-  });
+    tryRequireSpy = jest
+      .spyOn(utils, 'tryRequire')
+      .mockImplementation((name: string) => {
+        if (name === '@nestjs/cache-manager') {
+          return { CacheModule: fakeCacheModule } as any;
+        }
+        if (name === 'cache-manager') {
+          return {} as any; // apenas existência
+        }
+        return null as any;
+      });
 
-  it('should use custom defaultTtlInSeconds when provided', async () => {
-    options.defaultTtlInSeconds = 600;
-    const result = createCachingStarter(options);
-    const registerAsyncOptions = (result as any).options;
-    const factoryResult =
-      await registerAsyncOptions.useFactory(mockConfigService);
+    const customOpts = { cachingModuleOptions: { ttl: 123, max: 999 } };
+    const dm = createCachingStarter(customOpts);
 
-    expect(factoryResult.ttl).toBe(600);
-  });
+    expect(dm).toBeDefined();
+    expect(Array.isArray(dm.imports)).toBe(true);
+    expect(dm.imports?.length).toBeGreaterThan(0);
 
-  it('should pass inject and imports correctly to registerAsync', () => {
-    createCachingStarter();
-    expect(CacheModule.registerAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isGlobal: true,
-        imports: [],
-        inject: [ConfigService],
-        useFactory: expect.any(Function),
-      }),
+    const imported = dm.imports![0] as any;
+    expect(imported).toBeDefined();
+    expect(fakeCacheModule.register).toHaveBeenCalledWith(
+      customOpts.cachingModuleOptions,
     );
+    expect(imported).toHaveProperty('__mockName', 'CacheModule.register');
+    expect(imported.opts).toEqual(customOpts.cachingModuleOptions);
   });
 });
