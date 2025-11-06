@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { INestApplication, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { TypeOrmMigrationPlugin } from '../../src';
+import { TypeOrmMigrationPlugin } from '../../src/plugins/typeorm-migration.plugin';
 
 const mockDataSource = {
   runMigrations: jest.fn(),

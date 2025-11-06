@@ -1,8 +1,9 @@
 import { ConfigService } from '@nestjs/config';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-
+import { tryRequire } from '../utils/tryRequire';
 import { AppInitializerPlugin } from '../core';
-import { TypeOrmMigrationPlugin } from '../plugins';
+import { TypeOrmMigrationPlugin } from '../plugins/typeorm-migration.plugin';
+
+type TypeOrmModuleOptions = any;
 
 /**
  * Opções para o "Starter" de TypeORM.
@@ -22,6 +23,17 @@ export interface TypeOrmStarterOptions {
  * Esta função constrói toda a configuração necessária para o TypeOrmModule.
  */
 export function createTypeOrmStarter(options: TypeOrmStarterOptions = {}) {
+  const TypeOrmMod =
+    tryRequire<typeof import('@nestjs/typeorm')>('@nestjs/typeorm');
+  if (!TypeOrmMod) {
+    // log warn e retornar um module vazio ou DynamicModule que não dependa de TypeOrm
+    return {
+      module: class EmptyTypeOrmModule {},
+      imports: [],
+      providers: [],
+    } as any;
+  }
+
   const {
     autoLoadEntities = true,
     runMigrationsOnStartup = false,
@@ -29,16 +41,17 @@ export function createTypeOrmStarter(options: TypeOrmStarterOptions = {}) {
     typeOrmOptions = {},
   } = options;
 
+  const { TypeOrmModule } = TypeOrmMod;
+
   const typeOrmDynamicModule = TypeOrmModule.forRootAsync({
     imports: [],
     inject: [ConfigService],
-    useFactory: (configService: ConfigService): TypeOrmModuleOptions =>
-      ({
-        url: configService.get<string>(databaseUrlEnvKey),
-        autoLoadEntities: autoLoadEntities,
-        synchronize: false,
-        ...typeOrmOptions,
-      }) as TypeOrmModuleOptions,
+    useFactory: (configService: ConfigService): any => ({
+      url: configService.get<string>(databaseUrlEnvKey),
+      autoLoadEntities: autoLoadEntities,
+      synchronize: false,
+      ...typeOrmOptions,
+    }),
   });
 
   const plugins: AppInitializerPlugin[] = [];

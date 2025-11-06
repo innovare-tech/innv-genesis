@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TypeOrmMigrationPlugin } from '../../src';
 import {
   createTypeOrmStarter,
   TypeOrmStarterOptions,
 } from '../../src/starters';
+import { TypeOrmMigrationPlugin } from '../../src/plugins/typeorm-migration.plugin';
 
 jest.mock('@nestjs/typeorm', () => ({
   TypeOrmModule: {
@@ -42,7 +42,7 @@ describe('createTypeOrmStarter', () => {
     expect(result.plugins).toEqual([]);
     expect(result.module).toHaveProperty('__dynamicModule', true);
 
-    const forRootAsyncOptions = (result.module as any).options;
+    const forRootAsyncOptions = result.module.options;
     expect(forRootAsyncOptions.inject).toEqual([ConfigService]);
     expect(forRootAsyncOptions.imports).toEqual([]);
 
@@ -67,9 +67,7 @@ describe('createTypeOrmStarter', () => {
   it('should use custom databaseUrlEnvKey when provided', () => {
     options.databaseUrlEnvKey = 'CUSTOM_DB_URL';
     const result = createTypeOrmStarter(options);
-    const factoryResult = (result.module as any).options.useFactory(
-      mockConfigService,
-    );
+    const factoryResult = result.module.options.useFactory(mockConfigService);
 
     expect(factoryResult.url).toBe('mysql://custom:pass@host/db');
     expect(mockConfigService.get).toHaveBeenCalledWith('CUSTOM_DB_URL');
@@ -78,9 +76,7 @@ describe('createTypeOrmStarter', () => {
   it('should set autoLoadEntities to false when provided', () => {
     options.autoLoadEntities = false;
     const result = createTypeOrmStarter(options);
-    const factoryResult = (result.module as any).options.useFactory(
-      mockConfigService,
-    );
+    const factoryResult = result.module.options.useFactory(mockConfigService);
 
     expect(factoryResult.autoLoadEntities).toBe(false);
   });
@@ -91,9 +87,7 @@ describe('createTypeOrmStarter', () => {
       logging: true,
     };
     const result = createTypeOrmStarter(options);
-    const factoryResult = (result.module as any).options.useFactory(
-      mockConfigService,
-    );
+    const factoryResult = result.module.options.useFactory(mockConfigService);
 
     expect(factoryResult).toEqual({
       url: 'postgres://default:pass@host/db',
