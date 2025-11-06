@@ -6,6 +6,11 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/index.ts', // Exclui o barril principal
+    '!src/features/index.ts', // Exclui o barril principal
+    '!src/core/index.ts', // Exclui o barril principal
+    '!src/plugins/index.ts', // Exclui o barril principal
+    '!src/starters/index.ts', // Exclui o barril principal
+    '!src/starters/index.ts', // Exclui o barril principal
     '!src/**/*.module.ts', // Exclui módulos Nest (testados via integração)
   ],
   coverageReporters: ['text', 'lcov', 'json-summary'],

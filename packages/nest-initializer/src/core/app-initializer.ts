@@ -59,6 +59,10 @@ import {
   ResponseMapper,
   ResponsePatternInterceptor,
 } from '../interceptors/response-pattern.interceptor';
+import {
+  createIndexPageController,
+  IndexPageOptions,
+} from '../features/index-page.factory';
 
 type AnyModule =
   | Type
@@ -513,6 +517,17 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
       }
     }
 
+    return this;
+  }
+
+  /**
+   * Cria um controller dinâmico para servir um arquivo HTML estático (ex: index.html).
+   * O arquivo deve estar em um diretório 'public' na raiz do projeto.
+   * @param options Opções para configurar o path da rota e o nome do arquivo.
+   */
+  public withIndexPage(options: IndexPageOptions = {}): this {
+    const IndexController = createIndexPageController(options);
+    this.factoryGeneratedControllers.push(IndexController);
     return this;
   }
 

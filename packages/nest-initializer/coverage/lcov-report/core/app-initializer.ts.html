@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.35% </span>
+                <span class="strong">95.48% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>147/151</span>
+                <span class='fraction'>148/155</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">65.71% </span>
+                <span class="strong">63.88% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>23/35</span>
+                <span class='fraction'>23/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.14% </span>
+                <span class="strong">94.44% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>34/35</span>
+                <span class='fraction'>34/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.24% </span>
+                <span class="strong">95.3% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>141/145</span>
+                <span class='fraction'>142/149</span>
             </div>
         
             
@@ -685,7 +685,22 @@
 <a name='L620'></a><a href='#L620'>620</a>
 <a name='L621'></a><a href='#L621'>621</a>
 <a name='L622'></a><a href='#L622'>622</a>
-<a name='L623'></a><a href='#L623'>623</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
+<a name='L623'></a><a href='#L623'>623</a>
+<a name='L624'></a><a href='#L624'>624</a>
+<a name='L625'></a><a href='#L625'>625</a>
+<a name='L626'></a><a href='#L626'>626</a>
+<a name='L627'></a><a href='#L627'>627</a>
+<a name='L628'></a><a href='#L628'>628</a>
+<a name='L629'></a><a href='#L629'>629</a>
+<a name='L630'></a><a href='#L630'>630</a>
+<a name='L631'></a><a href='#L631'>631</a>
+<a name='L632'></a><a href='#L632'>632</a>
+<a name='L633'></a><a href='#L633'>633</a>
+<a name='L634'></a><a href='#L634'>634</a>
+<a name='L635'></a><a href='#L635'>635</a>
+<a name='L636'></a><a href='#L636'>636</a>
+<a name='L637'></a><a href='#L637'>637</a>
+<a name='L638'></a><a href='#L638'>638</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -739,6 +754,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1201,6 +1220,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1368,6 +1398,10 @@ import {
   ResponseMapper,
   ResponsePatternInterceptor,
 } from '../interceptors/response-pattern.interceptor';
+import {
+  createIndexPageController,
+  IndexPageOptions,
+} from '../features/index-page.factory';
 &nbsp;
 type AnyModule =
   | Type
@@ -1826,6 +1860,17 @@ export class AppInitializer&lt;T extends INestApplication = INestApplication&gt;
   }
 &nbsp;
   /**
+   * Cria um controller dinâmico para servir um arquivo HTML estático (ex: index.html).
+   * O arquivo deve estar em um diretório 'public' na raiz do projeto.
+   * @param options Opções para configurar o path da rota e o nome do arquivo.
+   */
+  public <span class="fstat-no" title="function not covered" >withIndexPage(</span>options: IndexPageOptions = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span>: this {
+    const IndexController = <span class="cstat-no" title="statement not covered" >createIndexPageController(options);</span>
+<span class="cstat-no" title="statement not covered" >    this.factoryGeneratedControllers.push(IndexController);</span>
+<span class="cstat-no" title="statement not covered" >    return this;</span>
+  }
+&nbsp;
+  /**
    * Adiciona um Interceptor global diretamente (instância).
    * @param interceptor
    */
@@ -1936,7 +1981,7 @@ export class AppInitializer&lt;T extends INestApplication = INestApplication&gt;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-31T00:52:11.290Z
+                at 2025-11-08T13:19:47.108Z
             </div>
         <script src="../prettify.js"></script>
         <script>
