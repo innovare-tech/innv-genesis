@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { INestApplication } from '@nestjs/common';
 import rateLimit, { Options as RateLimitOptions } from 'express-rate-limit';
-import { RateLimiterPlugin } from '../../src';
+import { RateLimiterPlugin } from '../../src/plugins/rate-limiter.plugin';
 
 const mockRateLimitMiddleware = jest.fn(() => 'rate_limit_middleware_instance');
 jest.mock('express-rate-limit', () => ({
