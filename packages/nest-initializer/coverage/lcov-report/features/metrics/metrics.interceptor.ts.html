@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">93.75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>15/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>5/6</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">60% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>3/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">92.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>13/13</span>
+                <span class='fraction'>13/14</span>
             </div>
         
             
@@ -104,7 +104,12 @@
 <a name='L39'></a><a href='#L39'>39</a>
 <a name='L40'></a><a href='#L40'>40</a>
 <a name='L41'></a><a href='#L41'>41</a>
-<a name='L42'></a><a href='#L42'>42</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -112,15 +117,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -130,13 +133,20 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -153,7 +163,6 @@
   NestInterceptor,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Histogram } from 'prom-client';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 &nbsp;
@@ -162,8 +171,7 @@ import { METRICS_HTTP_HISTOGRAM } from './metrics.tokens';
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
   constructor(
-    @Inject(METRICS_HTTP_HISTOGRAM)
-    private readonly histogram: Histogram<span class="branch-1 cbranch-no" title="branch not covered" >,</span>
+    @Inject(METRICS_HTTP_HISTOGRAM) private readonly histogram: any,
   ) {}
 &nbsp;
   intercept(context: ExecutionContext, next: CallHandler): Observable&lt;any&gt; {
@@ -171,17 +179,24 @@ export class MetricsInterceptor implements NestInterceptor {
     const request = httpContext.getRequest&lt;Request&gt;();
     const response = httpContext.getResponse&lt;Response&gt;();
 &nbsp;
-    const end = this.histogram.startTimer();
+    const endTimer =
+      this.histogram &amp;&amp; this.histogram.startTimer
+        ? this.histogram.startTimer()
+        : <span class="fstat-no" title="function not covered" ><span class="branch-1 cbranch-no" title="branch not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >() =</span>&gt; {};</span></span>
 &nbsp;
     return next.handle().pipe(
       finalize(() =&gt; {
         const path = request.route?.path ?? request.path;
-&nbsp;
-        end({
-          method: request.method,
-          path: path,
-          status_code: response.statusCode,
-        });
+        try {
+          endTimer({
+            method: request.method,
+            path: path,
+            status_code: response?.statusCode ?? <span class="branch-1 cbranch-no" title="branch not covered" >200,</span>
+          });
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (err) {
+          // swallow any metric errors
+        }
       }),
     );
   }
@@ -193,7 +208,7 @@ export class MetricsInterceptor implements NestInterceptor {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-31T00:52:11.290Z
+                at 2025-11-13T13:46:22.324Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

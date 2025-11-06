@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { INestApplication } from '@nestjs/common';
 import morgan from 'morgan';
-import { RequestLoggerPlugin } from '../../src';
+import { RequestLoggerPlugin } from '../../src/plugins/request-logger.plugin';
 
 const mockMorganMiddleware = jest.fn(() => 'morgan_dev_middleware');
 jest.mock('morgan', () => jest.fn(() => mockMorganMiddleware));

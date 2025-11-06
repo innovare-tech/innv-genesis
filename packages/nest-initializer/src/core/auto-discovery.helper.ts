@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { Type } from '@nestjs/common';
+import { Logger, Type } from '@nestjs/common';
 import { globSync } from 'glob';
 import { Reflector } from '@nestjs/core';
 
@@ -25,6 +25,10 @@ export function discoverComponents(
   reflectorInst: Reflector,
   requireFn: RequireFn = require,
 ): DiscoveredComponents {
+  const logger = new Logger('auto-discovery.helper');
+
+  logger.log('[discoverComponents] starting module discovery...');
+
   const providers: Type[] = [];
   const controllers: Type[] = [];
   const nexusClients: Type[] = [];
@@ -40,19 +44,32 @@ export function discoverComponents(
     absolute: true,
   });
 
+  logger.log(`[discoverComponents] found ${files.length} files to analyze.`);
+
   for (const file of files) {
+    logger.log(`[discoverComponents] file ${file} being analyzed...`);
+
     try {
       const exports = requireFn(file);
       for (const key in exports) {
         const exportedClass = exports[key];
         if (typeof exportedClass === 'function' && exportedClass.prototype) {
           if (reflectorInst.get<string>('path', exportedClass)) {
+            logger.log(
+              `[discoverComponents] [${key}] found ${exportedClass.name} - Controller`,
+            );
             controllers.push(exportedClass);
           } else if (
             reflectorInst.get<boolean>('__injectable__', exportedClass)
           ) {
+            logger.log(
+              `[discoverComponents] [${key}] found ${exportedClass.name} - Provider`,
+            );
             providers.push(exportedClass);
           } else if (reflectorInst.get(API_CLIENT_META_KEY, exportedClass)) {
+            logger.log(
+              `[discoverComponents] [${key}] found ${exportedClass.name} - Nexus`,
+            );
             nexusClients.push(exportedClass);
           }
         }
