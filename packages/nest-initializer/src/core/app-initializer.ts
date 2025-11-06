@@ -59,6 +59,10 @@ import {
   ResponseMapper,
   ResponsePatternInterceptor,
 } from '../interceptors/response-pattern.interceptor';
+import {
+  createIndexPageController,
+  IndexPageOptions,
+} from '../features/index-page.factory';
 
 type AnyModule =
   | Type
@@ -134,6 +138,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   private readonly nexusClientProviders: Provider[] = [];
   private readonly globalInterceptors: NestInterceptor[] = [];
   private readonly factoryGeneratedControllers: Type[] = [];
+  private readonly excludedRoutes: string[] = [];
 
   private constructor(module: Type, adapter?: AbstractHttpAdapter) {
     this.module = module;
@@ -517,6 +522,21 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   }
 
   /**
+   * Cria um controller dinâmico para servir um arquivo HTML estático (ex: index.html).
+   * O arquivo deve estar em um diretório 'public' na raiz do projeto.
+   * @param options Opções para configurar o path da rota e o nome do arquivo.
+   */
+  public withIndexPage(options: IndexPageOptions = {}): this {
+    const controllerPath = options.path ?? '/';
+    const IndexController = createIndexPageController(options);
+
+    this.factoryGeneratedControllers.push(IndexController);
+    this.excludedRoutes.push(controllerPath);
+
+    return this;
+  }
+
+  /**
    * Adiciona um Interceptor global diretamente (instância).
    * @param interceptor
    */
@@ -562,7 +582,10 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
       ? await NestFactory.create<T>(DynamicRootModule, this.adapter)
       : await NestFactory.create<T>(DynamicRootModule);
 
-    if (this.globalPrefix) this.app.setGlobalPrefix(this.globalPrefix);
+    if (this.globalPrefix)
+      this.app.setGlobalPrefix(this.globalPrefix, {
+        exclude: this.excludedRoutes,
+      });
     if (this.corsOptions) this.app.enableCors(this.corsOptions);
 
     if (this.versioningOptions) {
