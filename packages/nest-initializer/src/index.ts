@@ -6,4 +6,6 @@ export { CachingStarterOptions } from './starters/caching.starter';
 
 export { TerminusHealthCheckOptions } from './features/terminus-health-check.module';
 
+export { IndexPageOptions } from './features/index-page.factory';
+
 export * from './plugins';

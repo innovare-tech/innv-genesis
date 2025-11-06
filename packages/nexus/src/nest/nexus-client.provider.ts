@@ -63,6 +63,28 @@ export function createNexusClientProvider<T extends object>(
         }
       }
 
+      // Bloco novo para resolver headers dinâmicos
+      if (resolvedOptions.staticHeadersEnvKeys) {
+        if (!configService) {
+          throw new Error(
+            `[Nexus] ${clientClass.name} usa 'staticHeadersEnvKeys' mas ConfigService não está disponível.`,
+          );
+        }
+        const dynamicHeaders: Record<string, string> = {};
+        for (const headerName in resolvedOptions.staticHeadersEnvKeys) {
+          const envKey = resolvedOptions.staticHeadersEnvKeys[headerName];
+          const headerValue = configService.get<string>(envKey);
+          if (headerValue) {
+            dynamicHeaders[headerName] = headerValue;
+          }
+        }
+        // Mescla headers estáticos e dinâmicos
+        resolvedOptions.staticHeaders = {
+          ...resolvedOptions.staticHeaders,
+          ...dynamicHeaders,
+        };
+      }
+
       if (!resolvedOptions.baseUrl) {
         throw new Error(
           `[Nexus] ${clientClass.name} não conseguiu resolver a 'baseUrl'.`,
