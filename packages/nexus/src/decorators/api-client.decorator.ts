@@ -29,7 +29,11 @@ export interface ApiClientOptions {
    */
   staticHeaders?: Record<string, string>;
 
-  // interceptors?: Type<HttpInterceptor>[]; // Deixaremos para a integração Nest
+  /**
+   * (OPÇÃO 3) Mapeia nomes de Headers para chaves do .env (via ConfigService).
+   * Ex: { 'X-API-Key': 'MY_SERVICE_API_KEY' }
+   */
+  staticHeadersEnvKeys?: Record<string, string>;
 }
 
 export function ApiClient(options: ApiClientOptions): ClassDecorator {
