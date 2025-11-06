@@ -1,6 +1,6 @@
 {
   "name": "innv-genesis",
-  "version": "1.0.1",
+  "version": "1.2.1",
   "description": "Monorepo para o ecossistema @innv",
   "private": true,
   "license": "UNLICENSED",
@@ -21,9 +21,10 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "globals": "^15.0.0",
+    "prettier": "^3.2.5",
     "rimraf": "^5.0.7",
+    "supertest": "^7.1.4",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^8.46.2",
-    "prettier": "^3.2.5"
+    "typescript-eslint": "^8.46.2"
   }
 }

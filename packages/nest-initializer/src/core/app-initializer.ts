@@ -59,6 +59,10 @@ import {
   ResponseMapper,
   ResponsePatternInterceptor,
 } from '../interceptors/response-pattern.interceptor';
+import {
+  createIndexPageController,
+  IndexPageOptions,
+} from '../features/index-page.factory';
 
 type AnyModule =
   | Type
@@ -134,6 +138,7 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   private readonly nexusClientProviders: Provider[] = [];
   private readonly globalInterceptors: NestInterceptor[] = [];
   private readonly factoryGeneratedControllers: Type[] = [];
+  private readonly excludedRoutes: string[] = [];
 
   private constructor(module: Type, adapter?: AbstractHttpAdapter) {
     this.module = module;
@@ -491,27 +496,41 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
   public withAutoDiscovery(options: { basePath: string }): this {
     const reflector = new Reflector();
 
-    // 3. ESTA LINHA AGORA RECEBE OS 'nexusClients'
     this.autoDiscoveredComponents = discoverComponents(
       options.basePath,
       reflector,
     );
 
-    // 4. ADICIONE ESTE BLOCO LÓGICO
-    // Se encontramos algum cliente Nexus, vamos configurá-los.
+    this.logger.log(
+      `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.providers.length} providers e ${this.autoDiscoveredComponents.controllers.length} controllers.`,
+    );
+
     if (this.autoDiscoveredComponents.nexusClients.length > 0) {
       this.logger.log(
         `[Initializer] Auto-discovery encontrou ${this.autoDiscoveredComponents.nexusClients.length} clientes Nexus.`,
       );
 
-      // Garante que o NexusModule (com o NexusHttpService) seja importado
       this.featureModules.push(NexusModule);
 
-      // Cria os providers dinâmicos para cada cliente
       for (const clientClass of this.autoDiscoveredComponents.nexusClients) {
         this.nexusClientProviders.push(createNexusClientProvider(clientClass));
       }
     }
+
+    return this;
+  }
+
+  /**
+   * Cria um controller dinâmico para servir um arquivo HTML estático (ex: index.html).
+   * O arquivo deve estar em um diretório 'public' na raiz do projeto.
+   * @param options Opções para configurar o path da rota e o nome do arquivo.
+   */
+  public withIndexPage(options: IndexPageOptions = {}): this {
+    const controllerPath = options.path ?? '/';
+    const IndexController = createIndexPageController(options);
+
+    this.factoryGeneratedControllers.push(IndexController);
+    this.excludedRoutes.push(controllerPath);
 
     return this;
   }
@@ -562,7 +581,10 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
       ? await NestFactory.create<T>(DynamicRootModule, this.adapter)
       : await NestFactory.create<T>(DynamicRootModule);
 
-    if (this.globalPrefix) this.app.setGlobalPrefix(this.globalPrefix);
+    if (this.globalPrefix)
+      this.app.setGlobalPrefix(this.globalPrefix, {
+        exclude: this.excludedRoutes,
+      });
     if (this.corsOptions) this.app.enableCors(this.corsOptions);
 
     if (this.versioningOptions) {
