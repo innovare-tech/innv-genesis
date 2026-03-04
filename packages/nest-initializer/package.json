@@ -1,6 +1,6 @@
 {
   "name": "@innv/nest-initializer",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "Uma plataforma fluente e opinativa para inicializar e configurar aplicações NestJS com as melhores práticas.",
   "author": "Innovare",
   "license": "MIT",

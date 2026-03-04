@@ -42,6 +42,7 @@ export function discoverComponents(
       '**/plugins/**',
     ],
     absolute: true,
+    windowsPathsNoEscape: true,
   });
 
   logger.log(`[discoverComponents] found ${files.length} files to analyze.`);
