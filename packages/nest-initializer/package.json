@@ -1,6 +1,6 @@
 {
   "name": "@innv/nest-initializer",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Uma plataforma fluente e opinativa para inicializar e configurar aplicações NestJS com as melhores práticas.",
   "author": "Innovare",
   "license": "MIT",
@@ -64,9 +64,13 @@
     "prom-client": "^15.0.0",
     "reflect-metadata": "^0.1.13 || ^0.2.0",
     "rxjs": "^7.0.0",
-    "typeorm": "^0.3.0"
+    "typeorm": "^0.3.0",
+    "cookie-parser": "^1.4.7"
   },
   "peerDependenciesMeta": {
+    "cookie-parser": {
+      "optional": true
+    },
     "@nestjs/axios": {
       "optional": true
     },

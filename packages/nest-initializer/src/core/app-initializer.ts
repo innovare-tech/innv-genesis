@@ -69,6 +69,7 @@ import {
   SecuritySchemeObject,
   ServerVariableObject,
 } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
+import cookieParser from 'cookie-parser';
 
 type AnyModule =
   | Type
@@ -445,6 +446,14 @@ export class AppInitializer<T extends INestApplication = INestApplication> {
    */
   public useHelmet(): this {
     this.setupFunctions.push((app) => app.use(helmet()));
+    return this;
+  }
+
+  /**
+   * Adiciona o middleware para cookieParser
+   */
+  public useCookieParser(): this {
+    this.setupFunctions.push((app) => app.use(cookieParser()));
     return this;
   }
 
