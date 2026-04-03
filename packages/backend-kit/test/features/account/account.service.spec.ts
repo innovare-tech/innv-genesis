@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BkAccountService } from '../../../src/features/account/services/account.service';
 import { BkMembersRepository } from '../../../src/features/members/repositories/members.repository';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const bcrypt = require('bcrypt');
 
 describe('BkAccountService', () => {

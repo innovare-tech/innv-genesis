@@ -18,7 +18,7 @@ export class TicketsService {
   ): Promise<Ticket> {
     const protocol = `TK-${Date.now().toString(36).toUpperCase()}`;
 
-    return this.ticketsRepo.create({
+    return await this.ticketsRepo.create({
       organizationId,
       title: dto.title,
       description: dto.description,
