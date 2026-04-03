@@ -18,7 +18,7 @@ export interface CreateAgentInput {
   initialState?: Record<string, any>;
 }
 
-export interface UpdateAgentInput extends Partial<CreateAgentInput> {}
+export type UpdateAgentInput = Partial<CreateAgentInput>;
 
 export interface AgentResponse {
   id: string;

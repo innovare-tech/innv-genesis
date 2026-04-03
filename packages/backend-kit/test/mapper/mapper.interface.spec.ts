@@ -1,4 +1,4 @@
-import { IMapper, IAsyncMapper } from '../../src/mapper/mapper.interface';
+import { IAsyncMapper, IMapper } from '../../src';
 
 describe('IMapper', () => {
   it('should allow a concrete sync mapper implementation', () => {
