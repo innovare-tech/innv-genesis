@@ -7,6 +7,7 @@ import { BkRefreshTokenService } from '../../../src/features/auth/services/refre
 import { WrongAuthenticationException } from '../../../src/features/auth/exceptions/wrong-authentication.exception';
 import { AuthFeatureConfig } from '../../../src/features/feature.interfaces';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const bcrypt = require('bcrypt');
 
 describe('BkAuthService', () => {

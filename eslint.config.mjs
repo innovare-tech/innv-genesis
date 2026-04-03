@@ -9,9 +9,9 @@ import globals from 'globals';
 export default [
     {
         ignores: [
-            'dist/',
-            'node_modules/',
-            'coverage/',
+            '**/dist/',
+            '**/node_modules/',
+            '**/coverage/',
             'eslint.config.mjs',
             'jest.config.js',
             'commitlint.config.js',

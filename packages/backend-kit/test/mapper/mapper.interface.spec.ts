@@ -34,7 +34,7 @@ describe('IAsyncMapper', () => {
   it('should allow a concrete async mapper implementation', async () => {
     class StringToNumberAsyncMapper implements IAsyncMapper<string, number> {
       async map(input: string): Promise<number> {
-        return parseInt(input, 10);
+        return await Promise.resolve(parseInt(input, 10));
       }
     }
 
@@ -49,7 +49,7 @@ describe('IAsyncMapper', () => {
 
     class EnrichMapper implements IAsyncMapper<RawData, EnrichedData> {
       async map(input: RawData): Promise<EnrichedData> {
-        return { ...input, enriched: true };
+        return await Promise.resolve({ ...input, enriched: true });
       }
     }
 
