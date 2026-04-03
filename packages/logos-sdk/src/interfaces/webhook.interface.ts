@@ -19,7 +19,7 @@ export interface BotDecision {
 }
 
 export interface LogosWebhookPayload {
-  event: 'bot_decision' | string;
+  event: string;
   sessionId: string;
   decision?: BotDecision;
   data?: Record<string, any>;
