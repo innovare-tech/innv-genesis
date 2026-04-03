@@ -1,0 +1,53 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/index.ts',
+    '!src/**/index.ts',
+    '!src/**/*.module.ts',
+    '!src/features/auth/**/*.ts',
+    '!src/features/users/**/*.controller.ts',
+    '!src/features/users/dtos/**/*.ts',
+    '!src/features/organizations/**/*.controller.ts',
+    '!src/features/organizations/dtos/**/*.ts',
+    '!src/features/organizations/repositories/**/*.ts',
+    '!src/features/profiles/**/*.controller.ts',
+    '!src/features/profiles/dtos/**/*.ts',
+    '!src/features/profiles/repositories/**/*.ts',
+    '!src/features/members/**/*.controller.ts',
+    '!src/features/members/dtos/**/*.ts',
+    '!src/features/members/repositories/**/*.ts',
+    '!src/features/invites/**/*.controller.ts',
+    '!src/features/invites/dtos/**/*.ts',
+    '!src/features/invites/repositories/**/*.ts',
+    '!src/features/account/**/*.controller.ts',
+    '!src/features/account/dtos/**/*.ts',
+    '!src/features/*/schemas/**/*.ts',
+  ],
+  coverageReporters: ['text', 'lcov', 'json-summary'],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  testMatch: ['<rootDir>/test/**/*.spec.ts'],
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/test/tsconfig.json',
+        isolatedModules: true,
+      },
+    ],
+  },
+  setupFilesAfterEnv: ['<rootDir>/test/setup-tests.ts'],
+  moduleNameMapper: {
+    '^bcrypt$': '<rootDir>/test/__mocks__/bcrypt.ts',
+  },
+};

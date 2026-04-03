@@ -1,0 +1,76 @@
+{
+  "name": "@innv/logos-sdk",
+  "version": "0.1.0",
+  "description": "SDK NestJS para integração com o Logos Engine — chatbot conversacional SaaS.",
+  "author": "Innovare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/innovare-tech/innv-genesis.git",
+    "directory": "packages/logos-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/innovare-tech/innv-genesis/issues"
+  },
+  "homepage": "https://github.com/innovare-tech/innv-genesis/tree/main/packages/logos-sdk#readme",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "build:clean": "rimraf dist",
+    "build:cjs": "tsc -p tsconfig.build-cjs.json",
+    "build:esm": "tsc -p tsconfig.build-esm.json",
+    "build:types": "tsc -p tsconfig.build-types.json",
+    "build": "npm run build:clean && npm run build:cjs && npm run build:esm && npm run build:types",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "tslib": "^2.6.3"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/axios": "^3.0.0 || ^4.0.1",
+    "rxjs": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/axios": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/axios": "^4.0.1",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/testing": "^11.1.7",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^18.19.3",
+    "axios": "^1.6.0",
+    "jest": "^29.7.0",
+    "reflect-metadata": "^0.2.2",
+    "rimraf": "^5.0.7",
+    "rxjs": "^7.8.1",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.4.5"
+  },
+  "keywords": [
+    "nestjs",
+    "logos",
+    "chatbot",
+    "sdk",
+    "ai",
+    "conversational",
+    "saas",
+    "innv"
+  ]
+}
