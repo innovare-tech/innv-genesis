@@ -49,11 +49,6 @@ export class RolesGuard implements CanActivate {
 
     const jwtPermissions: string[] =
       (user['permissions'] as string[] | undefined) || [];
-    // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
-    // eslint-disable-next-line no-console
-    console.log(
-      `[ROLES-GUARD] path=${context.switchToHttp().getRequest().url} requiredRoles=${JSON.stringify(requiredRoles)} jwtPermissions=${JSON.stringify(jwtPermissions)} userSub=${user.sub}`,
-    );
     // O `TenantAccessGuard` popula `request.organization` com o tenant
     // resolvido. Quando o resolver é o `BkTenantResolverService`, esse
     // objeto é um documento Mongoose (`BkOrganization`) cuja chave
@@ -69,6 +64,26 @@ export class RolesGuard implements CanActivate {
     const organizationId = organization
       ? extractId(organization._id ?? organization.id)
       : null;
+
+    // SKIP GRACIOSO: quando este guard está registrado como `APP_GUARD`
+    // global (via `BackendKitSetup`), ele roda ANTES do `TenantAccessGuard`
+    // declarado em `@TenantController.UseGuards`. Nesse ponto o
+    // `request.organization` ainda não foi populado — se validarmos
+    // `@Roles()` aqui, toda rota tenant-scoped retornaria 403 mesmo
+    // para Owner.
+    //
+    // A sequência correta no Nest v11 para um `@TenantController`:
+    //   1. `RolesGuard` GLOBAL roda — skippa aqui (organization undefined).
+    //   2. `TenantAccessGuard` do controller roda — popula organization.
+    //   3. `RolesGuard` do controller roda — organization populado, valida.
+    //
+    // Consumers que usam `@Roles()` FORA de `@TenantController` devem
+    // aplicar `@UseGuards(RolesGuard)` manualmente no controller, OU
+    // popular `request.organization` em middleware próprio. Sem contexto
+    // de tenant, @Roles não é avaliável (permissions são por org).
+    if (!organizationId && jwtPermissions.length === 0) {
+      return true;
+    }
 
     if (organization && user['orgId'] && user['orgId'] !== organizationId) {
       throw new ForbiddenException(
@@ -93,12 +108,6 @@ export class RolesGuard implements CanActivate {
         organizationId,
       );
     }
-
-    // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
-    // eslint-disable-next-line no-console
-    console.log(
-      `[ROLES-GUARD] final userPermissions=${JSON.stringify(userPermissions)} organizationId=${organizationId}`,
-    );
 
     if (userPermissions.includes('*')) {
       return true;
