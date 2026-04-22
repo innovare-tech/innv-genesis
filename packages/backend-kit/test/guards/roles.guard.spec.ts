@@ -229,6 +229,92 @@ describe('RolesGuard', () => {
           permissionsService.getConsolidatedPermissions,
         ).toHaveBeenCalledWith('user-1', '507f1f77bcf86cd799439011');
       });
+
+      it(
+        'aceita Mongoose doc (organization._id com toHexString) — cenário ' +
+          'do BkTenantResolverService default',
+        async () => {
+          // REGRESSÃO: resolver built-in do backend-kit retorna o doc
+          // Mongoose direto como tenant. Doc tem `_id` (ObjectId) com
+          // `.toHexString()`, SEM `.id` populado (a menos que o schema
+          // tenha virtual `id` explícito, que o `BkOrganization` não
+          // tem). Sem este suporte, o guard via antigamente caía no
+          // `organization.id = undefined` e PULAVA o fallback → 403
+          // universal para consumers com JWT sem permissions.
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.manage']);
+          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+            'tags.manage',
+          ]);
+
+          const user = { sub: 'user-1' };
+          const hexId = '507f1f77bcf86cd799439011';
+          const organization = {
+            _id: {
+              toHexString: () => hexId,
+              toString: () => `ObjectId("${hexId}")`,
+            },
+            slug: 'innv',
+            name: 'Innovare',
+          };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).resolves.toBe(true);
+          // Garantia: usou toHexString() (hex canonical), NÃO toString()
+          // do wrapper (que retornaria `ObjectId("...")`).
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).toHaveBeenCalledWith('user-1', hexId);
+        },
+      );
+
+      it(
+        'prefere organization._id sobre organization.id quando ambos ' +
+          'presentes — _id é canonical no Mongoose',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.manage']);
+          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+            '*',
+          ]);
+
+          const user = { sub: 'user-1' };
+          const organization = {
+            _id: 'canonical-oid',
+            id: 'virtual-string', // Mongoose pode expor ambos
+          };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).resolves.toBe(true);
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).toHaveBeenCalledWith('user-1', 'canonical-oid');
+        },
+      );
+
+      it(
+        'cai para organization.id quando _id ausente — suporta resolvers ' +
+          'custom que usam UUID string como identificador',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.manage']);
+          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+            '*',
+          ]);
+
+          const user = { sub: 'user-1' };
+          const organization = { id: 'uuid-123' };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).resolves.toBe(true);
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).toHaveBeenCalledWith('user-1', 'uuid-123');
+        },
+      );
     },
   );
 });

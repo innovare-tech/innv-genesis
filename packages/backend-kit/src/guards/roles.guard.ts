@@ -49,11 +49,23 @@ export class RolesGuard implements CanActivate {
 
     const jwtPermissions: string[] =
       (user['permissions'] as string[] | undefined) || [];
+    // O `TenantAccessGuard` popula `request.organization` com o tenant
+    // resolvido. Quando o resolver é o `BkTenantResolverService`, esse
+    // objeto é um documento Mongoose (`BkOrganization`) cuja chave
+    // primária é `_id` (ObjectId), não `id`. Consumers custom podem
+    // retornar objetos com `id` (UUID string). Aceitamos ambos para
+    // evitar acoplamento de shape.
     const organization = request['organization'] as
-      | { id?: string | { toString(): string } }
+      | {
+          _id?: unknown;
+          id?: unknown;
+        }
       | undefined;
+    const organizationId = organization
+      ? extractId(organization._id ?? organization.id)
+      : null;
 
-    if (organization && user['orgId'] && user['orgId'] !== organization['id']) {
+    if (organization && user['orgId'] && user['orgId'] !== organizationId) {
       throw new ForbiddenException(
         'As permissões deste token não pertencem à organização atual.',
       );
@@ -68,17 +80,12 @@ export class RolesGuard implements CanActivate {
     if (
       jwtPermissions.length === 0 &&
       this.permissionsService &&
-      organization &&
-      organization.id != null &&
+      organizationId &&
       user.sub
     ) {
-      const orgId =
-        typeof organization.id === 'string'
-          ? organization.id
-          : String(organization.id);
       userPermissions = await this.permissionsService.getConsolidatedPermissions(
         user.sub,
-        orgId,
+        organizationId,
       );
     }
 
@@ -98,4 +105,24 @@ export class RolesGuard implements CanActivate {
 
     return true;
   }
+}
+
+/**
+ * Normaliza o identificador do tenant para string. Aceita:
+ *   - `string` (UUID, slug, etc.) — usado direto;
+ *   - `ObjectId` do Mongoose (tem `toHexString`) — mais barato que
+ *     `toString()` e retorna o hex canonical;
+ *   - outros objetos com `toString()` — fallback genérico.
+ *
+ * Retorna `null` quando o valor é nullish, para que o caller decida
+ * se deve pular o fallback dinâmico de permissions.
+ */
+function extractId(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') return value;
+  const hex = (value as { toHexString?: () => string }).toHexString;
+  if (typeof hex === 'function') {
+    return hex.call(value);
+  }
+  return String(value);
 }
