@@ -1,6 +1,6 @@
 {
   "name": "@innovare-tech/backend-kit",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Toolkit opinativa para backends NestJS — repositórios, exceções, guards, decorators, paginação e multi-tenancy.",
   "author": "Innovare",
   "license": "MIT",

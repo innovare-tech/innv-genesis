@@ -45,7 +45,17 @@ export class TenantAccessGuard implements CanActivate {
       if (result.tenantUser) {
         request[tenantUserField] = result.tenantUser;
       }
-    } catch {
+      // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
+      // eslint-disable-next-line no-console
+      console.log(
+        `[TENANT-GUARD] populated request.${requestField}: tenantExists=${!!result.tenant} tenantType=${typeof result.tenant} tenantId=${(result.tenant as { _id?: unknown; id?: unknown })?._id ?? (result.tenant as { id?: unknown })?.id} path=${request.url}`,
+      );
+    } catch (error) {
+      // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
+      // eslint-disable-next-line no-console
+      console.error(
+        `[TENANT-GUARD] resolver THREW: ${(error as Error)?.message ?? error} path=${request.url}`,
+      );
       throw new ForbiddenException(
         `Acesso negado ao tenant: ${tenantIdentifier}`,
       );
