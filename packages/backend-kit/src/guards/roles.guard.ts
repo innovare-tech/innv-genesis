@@ -49,6 +49,11 @@ export class RolesGuard implements CanActivate {
 
     const jwtPermissions: string[] =
       (user['permissions'] as string[] | undefined) || [];
+    // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[ROLES-GUARD] path=${context.switchToHttp().getRequest().url} requiredRoles=${JSON.stringify(requiredRoles)} jwtPermissions=${JSON.stringify(jwtPermissions)} userSub=${user.sub}`,
+    );
     // O `TenantAccessGuard` popula `request.organization` com o tenant
     // resolvido. Quando o resolver é o `BkTenantResolverService`, esse
     // objeto é um documento Mongoose (`BkOrganization`) cuja chave
@@ -88,6 +93,12 @@ export class RolesGuard implements CanActivate {
         organizationId,
       );
     }
+
+    // DIAGNOSTIC: remover apos confirmar origem do 403 tags.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[ROLES-GUARD] final userPermissions=${JSON.stringify(userPermissions)} organizationId=${organizationId}`,
+    );
 
     if (userPermissions.includes('*')) {
       return true;
