@@ -1,6 +1,7 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from '../../src/guards/roles.guard';
+import { BkPermissionsService } from '../../src/features/members/services/permissions.service';
 
 describe('RolesGuard', () => {
   let guard: RolesGuard;
@@ -19,68 +20,215 @@ describe('RolesGuard', () => {
 
   beforeEach(() => {
     reflector = new Reflector();
+    // Por default, instancia sem `BkPermissionsService` — modo legado
+    // (lê permissions do JWT). Testes do fallback dinâmico instanciam
+    // explicitamente com um mock do service.
     guard = new RolesGuard(reflector);
   });
 
-  it('should allow access when no @Roles() is defined', () => {
+  it('should allow access when no @Roles() is defined', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
 
     const context = mockContext({ permissions: [] });
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('should allow access when @Roles() is empty array', () => {
+  it('should allow access when @Roles() is empty array', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
 
     const context = mockContext({ permissions: [] });
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('should allow access when user has required permission', () => {
+  it('should allow access when user has required permission', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const context = mockContext({ permissions: ['admin', 'viewer'] });
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('should allow access with owner bypass wildcard (*)', () => {
+  it('should allow access with owner bypass wildcard (*)', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const context = mockContext({ permissions: ['*'] });
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('should throw ForbiddenException when user lacks permission', () => {
+  it('should throw ForbiddenException when user lacks permission', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const context = mockContext({ permissions: ['viewer'] });
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
-  it('should return false when user is undefined', () => {
+  it('should return false when user is undefined', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const context = mockContext(undefined);
-    expect(guard.canActivate(context)).toBe(false);
+    await expect(guard.canActivate(context)).resolves.toBe(false);
   });
 
-  it('should throw ForbiddenException when orgId does not match organization', () => {
+  it('should throw ForbiddenException when orgId does not match organization', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const user = { permissions: ['admin'], orgId: 'org-1' };
     const organization = { id: 'org-2' };
     const context = mockContext(user, organization);
 
-    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
-  it('should allow when orgId matches organization', () => {
+  it('should allow when orgId matches organization', async () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
     const user = { permissions: ['admin'], orgId: 'org-1' };
     const organization = { id: 'org-1' };
     const context = mockContext(user, organization);
 
-    expect(guard.canActivate(context)).toBe(true);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
   });
+
+  describe(
+    'fallback dinâmico via BkPermissionsService ' +
+      '(JWT sem permissions)',
+    () => {
+      // Cenário crítico: consumer usa `BkAuthService` que emite JWT com
+      // apenas `{sub, email, username}` — sem `permissions`. Sem o
+      // fallback, TODA rota com `@Roles()` retornaria 403 mesmo para
+      // Owner. O guard agora consulta `getConsolidatedPermissions` para
+      // resolver on-the-fly quando o service está disponível.
+
+      let permissionsService: jest.Mocked<BkPermissionsService>;
+
+      beforeEach(() => {
+        permissionsService = {
+          getConsolidatedPermissions: jest.fn(),
+        } as unknown as jest.Mocked<BkPermissionsService>;
+        guard = new RolesGuard(reflector, permissionsService);
+      });
+
+      it(
+        'resolve via service quando user.permissions está vazio + há ' +
+          'organização e sub',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.manage']);
+          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+            'tags.manage',
+            'tags.view',
+          ]);
+
+          const user = { sub: 'user-1' };
+          const organization = { id: 'org-a' };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).resolves.toBe(true);
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).toHaveBeenCalledWith('user-1', 'org-a');
+        },
+      );
+
+      it('wildcard do service tem efeito de bypass (Owner)', async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
+        permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+          '*',
+        ]);
+
+        const user = { sub: 'user-1' };
+        const organization = { id: 'org-a' };
+        const context = mockContext(user, organization);
+
+        await expect(guard.canActivate(context)).resolves.toBe(true);
+      });
+
+      it(
+        'service retorna array vazio → ForbiddenException (não-membro ou ' +
+          'sem roles)',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.manage']);
+          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce(
+            [],
+          );
+
+          const user = { sub: 'user-1' };
+          const organization = { id: 'org-a' };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).rejects.toThrow(
+            ForbiddenException,
+          );
+        },
+      );
+
+      it(
+        'prefere user.permissions quando presente (não chama service — ' +
+          'evita query extra)',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['tags.view']);
+
+          const user = { sub: 'user-1', permissions: ['tags.view'] };
+          const organization = { id: 'org-a' };
+          const context = mockContext(user, organization);
+
+          await expect(guard.canActivate(context)).resolves.toBe(true);
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).not.toHaveBeenCalled();
+        },
+      );
+
+      it(
+        'não tenta resolver quando organization ausente ' +
+          '(ex.: rota não-tenant) — mantém comportamento legado',
+        async () => {
+          jest
+            .spyOn(reflector, 'getAllAndOverride')
+            .mockReturnValue(['admin']);
+
+          const user = { sub: 'user-1' };
+          const context = mockContext(user); // sem organization
+
+          await expect(guard.canActivate(context)).rejects.toThrow(
+            ForbiddenException,
+          );
+          expect(
+            permissionsService.getConsolidatedPermissions,
+          ).not.toHaveBeenCalled();
+        },
+      );
+
+      it('aceita organization.id como ObjectId-like (não-string)', async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
+        permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+          'tags.manage',
+        ]);
+
+        const user = { sub: 'user-1' };
+        // Simula ObjectId do Mongoose: tem toString() mas não é string.
+        const organization = {
+          id: { toString: () => '507f1f77bcf86cd799439011' },
+        };
+        const context = mockContext(user, organization);
+
+        await expect(guard.canActivate(context)).resolves.toBe(true);
+        expect(
+          permissionsService.getConsolidatedPermissions,
+        ).toHaveBeenCalledWith('user-1', '507f1f77bcf86cd799439011');
+      });
+    },
+  );
 });
