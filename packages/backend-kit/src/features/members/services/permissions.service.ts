@@ -13,7 +13,19 @@ export class BkPermissionsService {
     userId: string,
     orgId: string,
   ): Promise<string[]> {
+    // DIAGNOSTIC: remover apos confirmar fix do 403 tags. Estamos
+    // depurando por que o Owner nao resolve '*' em POST /tags mesmo
+    // apos o fix 0.2.2 do RolesGuard ter corrigido a extracao do
+    // tenant ID.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[BK-PERMS] getConsolidatedPermissions userId=${userId} orgId=${orgId}`,
+    );
     const member = await this.membersRepo.findByOrgAndUser(orgId, userId);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[BK-PERMS] member found=${!!member} isOwner=${member?.isOwner} profileId=${member?.profileId} customRoles=${JSON.stringify(member?.customRoles)}`,
+    );
 
     if (!member) return [];
 
@@ -32,6 +44,9 @@ export class BkPermissionsService {
       }
     }
 
-    return Array.from(permissions);
+    const result = Array.from(permissions);
+    // eslint-disable-next-line no-console
+    console.log(`[BK-PERMS] resolved permissions=${JSON.stringify(result)}`);
+    return result;
   }
 }
