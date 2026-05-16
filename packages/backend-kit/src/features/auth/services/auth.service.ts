@@ -10,7 +10,10 @@ import { LoginDTO } from '../dtos/login.dto';
 import { AuthResponseDTO } from '../dtos/auth-response.dto';
 import { WrongAuthenticationException } from '../exceptions/wrong-authentication.exception';
 import { AUTH_FEATURE_CONFIG } from '../../feature.constants';
-import { AuthFeatureConfig } from '../../feature.interfaces';
+import {
+  AccessTokenClaimsContext,
+  AuthFeatureConfig,
+} from '../../feature.interfaces';
 import { BkEvents, createBkEvent } from '../../events/bk-events';
 
 @Injectable()
@@ -58,7 +61,9 @@ export class BkAuthService {
 
     this.eventEmitter.emit(BkEvents.BEFORE_LOGIN, createBkEvent({ dto }));
 
-    const response = await this.generateAuthResponse(user);
+    const response = await this.generateAuthResponse(user, {
+      intent: 'login',
+    });
 
     if (this.config.onAfterLogin) {
       await this.config.onAfterLogin(user, response);
@@ -77,11 +82,12 @@ export class BkAuthService {
     if (!user) {
       throw new WrongAuthenticationException(`User not found: ${email}`);
     }
-    return this.generateAuthResponse(user);
+    return this.generateAuthResponse(user, { intent: 'login' });
   }
 
   async refreshTokens(refreshTokenUuid: string): Promise<AuthResponseDTO> {
-    const userId = await this.refreshTokenService.validate(refreshTokenUuid);
+    const { userId, impersonatedBy } =
+      await this.refreshTokenService.validate(refreshTokenUuid);
     await this.refreshTokenService.revoke(refreshTokenUuid);
 
     const user = await this.usersRepo.findById(userId);
@@ -91,12 +97,48 @@ export class BkAuthService {
       );
     }
 
-    const response = await this.generateAuthResponse(user);
+    // Preserva a marca `impersonatedBy` no ciclo de refresh: o JWT novo
+    // mantém a claim e o novo doc de refresh-token continua marcado.
+    const response = await this.generateAuthResponse(user, {
+      intent: 'refresh',
+      impersonatedBy,
+    });
 
     this.eventEmitter.emit(
       BkEvents.AFTER_REFRESH_TOKEN,
       createBkEvent({ userId, response }),
     );
+
+    return response;
+  }
+
+  /**
+   * Emite uma resposta de autenticação para um `BkUser` arbitrário sob
+   * a claim `impersonatedBy: <adminUserId>`. Pré-requisito: o caller
+   * (em geral `BkPlatformService`) já validou que `adminUserId` é um
+   * Platform Admin via guard. **Não emite evento de auditoria** — a
+   * orquestração disso é responsabilidade do `BkPlatformService`, que
+   * tem o contexto de tenant/role do target e produz o snapshot rico.
+   */
+  async impersonate(
+    adminUserId: string,
+    targetUserId: string,
+  ): Promise<AuthResponseDTO> {
+    const target = await this.usersRepo.findById(targetUserId);
+    if (!target || target.status !== 'ACTIVE') {
+      throw new UnauthorizedException(
+        'Usuário-alvo inativo ou não encontrado.',
+      );
+    }
+
+    const response = await this.generateAuthResponse(target, {
+      intent: 'impersonate',
+      impersonatedBy: adminUserId,
+    });
+
+    if (this.config.onAfterLogin) {
+      await this.config.onAfterLogin(target, response);
+    }
 
     return response;
   }
@@ -109,7 +151,9 @@ export class BkAuthService {
     if (!user || user.status !== 'ACTIVE') {
       throw new UnauthorizedException('Usuário não encontrado ou inativo.');
     }
-    const response = await this.generateAuthResponse(user);
+    const response = await this.generateAuthResponse(user, {
+      intent: 'switch',
+    });
 
     this.eventEmitter.emit(
       BkEvents.ORGANIZATION_SWITCHED,
@@ -119,22 +163,40 @@ export class BkAuthService {
     return response;
   }
 
-  private async generateAuthResponse(user: any): Promise<AuthResponseDTO> {
+  private async generateAuthResponse(
+    user: any,
+    context: AccessTokenClaimsContext = { intent: 'login' },
+  ): Promise<AuthResponseDTO> {
     const expiresIn = this.config.accessTokenExpiresIn ?? '15m';
     const secretKey = this.config.jwtSecretConfigKey ?? 'JWT_SECRET';
 
-    const payload = {
+    const basePayload = {
       sub: user._id.toHexString ? user._id.toHexString() : String(user._id),
       email: user.email,
       username: user.name,
     };
+
+    // Hook opcional para enriquecer o JWT com claims customizadas
+    // (tenantId, role, permissions, isPlatformAdmin, impersonatedBy, ...).
+    // Spread de extraClaims ANTES de basePayload garante que o hook nunca
+    // sobrescreva sub/email/username.
+    const extraClaims = this.config.buildAccessTokenClaims
+      ? await this.config.buildAccessTokenClaims(user, context)
+      : undefined;
+
+    const payload = extraClaims
+      ? { ...extraClaims, ...basePayload }
+      : basePayload;
 
     const accessToken = await this.jwtService.signAsync(payload as any, {
       secret: this.configService.get(secretKey),
       expiresIn: expiresIn as any,
     });
 
-    const refreshToken = await this.refreshTokenService.create(user._id);
+    const refreshToken = await this.refreshTokenService.create(
+      user._id,
+      context.impersonatedBy,
+    );
 
     const expiresInSeconds = this.parseExpiryToSeconds(expiresIn);
 

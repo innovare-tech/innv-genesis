@@ -93,8 +93,7 @@ describe('RolesGuard', () => {
   });
 
   describe(
-    'fallback dinâmico via BkPermissionsService ' +
-      '(JWT sem permissions)',
+    'fallback dinâmico via BkPermissionsService ' + '(JWT sem permissions)',
     () => {
       // Cenário crítico: consumer usa `BkAuthService` que emite JWT com
       // apenas `{sub, email, username}` — sem `permissions`. Sem o
@@ -200,9 +199,7 @@ describe('RolesGuard', () => {
           // saber se o tenant seria populado pelo próximo guard. Sem
           // skip, toda rota tenant-scoped retornava 403 para Owner.
           // Detalhes na suite "Skip gracioso" abaixo.
-          jest
-            .spyOn(reflector, 'getAllAndOverride')
-            .mockReturnValue(['admin']);
+          jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
 
           const user = { sub: 'user-1' };
           const context = mockContext(user); // sem organization
@@ -323,108 +320,105 @@ describe('RolesGuard', () => {
     },
   );
 
-  describe(
-    'Skip gracioso — APP_GUARD global rodando antes de TenantAccessGuard',
-    () => {
-      // REGRESSÃO: no Nest v11 os guards globais (`APP_GUARD`) rodam
-      // ANTES dos guards de controller (`@UseGuards` em
-      // `@TenantController`). Quando o `BackendKitSetup` registra o
-      // `RolesGuard` como global E o endpoint usa `@TenantController +
-      // @Roles`, o global executa com `request.organization` undefined
-      // e, sem skip, negava acesso a toda rota tenant-scoped — até para
-      // Owner. Ver bug 403 do Logos (POST /tags) diagnosticado em
-      // 0.2.3-0.2.5.
-      //
-      // O skip deve ativar quando: sem organization populado E sem
-      // permissions no JWT. Nesses casos, delegamos ao próximo guard
-      // na cadeia (TenantAccessGuard + RolesGuard do controller) a
-      // responsabilidade de validar.
-      let permissionsService: jest.Mocked<BkPermissionsService>;
+  describe('Skip gracioso — APP_GUARD global rodando antes de TenantAccessGuard', () => {
+    // REGRESSÃO: no Nest v11 os guards globais (`APP_GUARD`) rodam
+    // ANTES dos guards de controller (`@UseGuards` em
+    // `@TenantController`). Quando o `BackendKitSetup` registra o
+    // `RolesGuard` como global E o endpoint usa `@TenantController +
+    // @Roles`, o global executa com `request.organization` undefined
+    // e, sem skip, negava acesso a toda rota tenant-scoped — até para
+    // Owner. Ver bug 403 do Logos (POST /tags) diagnosticado em
+    // 0.2.3-0.2.5.
+    //
+    // O skip deve ativar quando: sem organization populado E sem
+    // permissions no JWT. Nesses casos, delegamos ao próximo guard
+    // na cadeia (TenantAccessGuard + RolesGuard do controller) a
+    // responsabilidade de validar.
+    let permissionsService: jest.Mocked<BkPermissionsService>;
 
-      beforeEach(() => {
-        permissionsService = {
-          getConsolidatedPermissions: jest.fn(),
-        } as unknown as jest.Mocked<BkPermissionsService>;
-        guard = new RolesGuard(reflector, permissionsService);
-      });
+    beforeEach(() => {
+      permissionsService = {
+        getConsolidatedPermissions: jest.fn(),
+      } as unknown as jest.Mocked<BkPermissionsService>;
+      guard = new RolesGuard(reflector, permissionsService);
+    });
 
-      it(
-        'skippa (return true) quando organization ausente E JWT sem ' +
-          'permissions — caso clássico do APP_GUARD global',
-        async () => {
-          jest
-            .spyOn(reflector, 'getAllAndOverride')
-            .mockReturnValue(['tags.manage']);
+    it(
+      'skippa (return true) quando organization ausente E JWT sem ' +
+        'permissions — caso clássico do APP_GUARD global',
+      async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
 
-          // Cenário real do bug: guard global roda, ninguem populou
-          // request.organization ainda, JWT não carrega permissions.
-          const user = { sub: 'user-1' };
-          const context = mockContext(user, undefined);
+        // Cenário real do bug: guard global roda, ninguem populou
+        // request.organization ainda, JWT não carrega permissions.
+        const user = { sub: 'user-1' };
+        const context = mockContext(user, undefined);
 
-          await expect(guard.canActivate(context)).resolves.toBe(true);
-          // Crítico: NÃO chamou o service — o skip é gratuito, sem I/O.
-          expect(
-            permissionsService.getConsolidatedPermissions,
-          ).not.toHaveBeenCalled();
-        },
-      );
+        await expect(guard.canActivate(context)).resolves.toBe(true);
+        // Crítico: NÃO chamou o service — o skip é gratuito, sem I/O.
+        expect(
+          permissionsService.getConsolidatedPermissions,
+        ).not.toHaveBeenCalled();
+      },
+    );
 
-      it(
-        'NÃO skippa quando JWT carrega permissions — avalia direto mesmo ' +
-          'sem organization',
-        async () => {
-          jest
-            .spyOn(reflector, 'getAllAndOverride')
-            .mockReturnValue(['tags.manage']);
+    it(
+      'NÃO skippa quando JWT carrega permissions — avalia direto mesmo ' +
+        'sem organization',
+      async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
 
-          const user = { sub: 'user-1', permissions: ['tags.manage'] };
-          const context = mockContext(user, undefined);
+        const user = { sub: 'user-1', permissions: ['tags.manage'] };
+        const context = mockContext(user, undefined);
 
-          await expect(guard.canActivate(context)).resolves.toBe(true);
-        },
-      );
+        await expect(guard.canActivate(context)).resolves.toBe(true);
+      },
+    );
 
-      it(
-        'NÃO skippa quando JWT tem permissions insuficientes — lança 403 ' +
-          'sem consultar service',
-        async () => {
-          jest
-            .spyOn(reflector, 'getAllAndOverride')
-            .mockReturnValue(['tags.manage']);
+    it(
+      'NÃO skippa quando JWT tem permissions insuficientes — lança 403 ' +
+        'sem consultar service',
+      async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
 
-          const user = { sub: 'user-1', permissions: ['viewer'] };
-          const context = mockContext(user, undefined);
+        const user = { sub: 'user-1', permissions: ['viewer'] };
+        const context = mockContext(user, undefined);
 
-          await expect(guard.canActivate(context)).rejects.toThrow(
-            ForbiddenException,
-          );
-          expect(
-            permissionsService.getConsolidatedPermissions,
-          ).not.toHaveBeenCalled();
-        },
-      );
+        await expect(guard.canActivate(context)).rejects.toThrow(
+          ForbiddenException,
+        );
+        expect(
+          permissionsService.getConsolidatedPermissions,
+        ).not.toHaveBeenCalled();
+      },
+    );
 
-      it(
-        'NÃO skippa quando organization ESTÁ populada — valida pela via ' +
-          'normal (service dinâmico)',
-        async () => {
-          jest
-            .spyOn(reflector, 'getAllAndOverride')
-            .mockReturnValue(['tags.manage']);
-          permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
-            '*',
-          ]);
+    it(
+      'NÃO skippa quando organization ESTÁ populada — valida pela via ' +
+        'normal (service dinâmico)',
+      async () => {
+        jest
+          .spyOn(reflector, 'getAllAndOverride')
+          .mockReturnValue(['tags.manage']);
+        permissionsService.getConsolidatedPermissions.mockResolvedValueOnce([
+          '*',
+        ]);
 
-          const user = { sub: 'user-1' };
-          const organization = { _id: 'org-123' };
-          const context = mockContext(user, organization);
+        const user = { sub: 'user-1' };
+        const organization = { _id: 'org-123' };
+        const context = mockContext(user, organization);
 
-          await expect(guard.canActivate(context)).resolves.toBe(true);
-          expect(
-            permissionsService.getConsolidatedPermissions,
-          ).toHaveBeenCalledWith('user-1', 'org-123');
-        },
-      );
-    },
-  );
+        await expect(guard.canActivate(context)).resolves.toBe(true);
+        expect(
+          permissionsService.getConsolidatedPermissions,
+        ).toHaveBeenCalledWith('user-1', 'org-123');
+      },
+    );
+  });
 });

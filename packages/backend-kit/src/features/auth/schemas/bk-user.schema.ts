@@ -28,6 +28,14 @@ export class BkUser {
   @Prop({ default: false })
   requiresPasswordChange!: boolean;
 
+  /**
+   * Privilégio global de Platform Admin (ortogonal ao RBAC por-tenant).
+   * Quando true, libera acesso aos endpoints /platform/* via
+   * PlatformAdminGuard. Default false em todos os usuários.
+   */
+  @Prop({ default: false })
+  isPlatformAdmin!: boolean;
+
   @Prop()
   createdAt!: Date;
 

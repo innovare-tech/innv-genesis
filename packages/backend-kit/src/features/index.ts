@@ -9,3 +9,4 @@ export * from './members';
 export * from './invites';
 export * from './account';
 export * from './events';
+export * from './platform';

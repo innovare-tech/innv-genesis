@@ -34,6 +34,12 @@ import { MembersFeatureModule } from './features/members/members-feature.module'
 import { BkTenantResolverService } from './features/members/services/bk-tenant-resolver.service';
 import { InvitesFeatureModule } from './features/invites/invites-feature.module';
 import { AccountFeatureModule } from './features/account/account-feature.module';
+import {
+  PlatformFeatureModule,
+  PlatformFeatureConfig,
+} from './features/platform/platform-feature.module';
+import { PLATFORM_IMPERSONATOR } from './features/feature.constants';
+import { BkAuthService } from './features/auth/services/auth.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 export interface BackendKitModuleOptions {
@@ -52,6 +58,7 @@ export interface BackendKitModuleOptions {
   invites?: InvitesFeatureConfig | boolean;
   profiles?: ProfilesFeatureConfig | boolean;
   account?: AccountFeatureConfig | boolean;
+  platform?: PlatformFeatureConfig | boolean;
 }
 
 @Module({})
@@ -163,6 +170,34 @@ export class BackendKitModule {
         options.account,
       );
       imports.push(AccountFeatureModule.register(accountConfig));
+    }
+
+    if (isEnabled(options.platform)) {
+      // Platform Admin depende em runtime de auth + organizations + members.
+      // Falha rápida no boot com mensagem clara se faltar alguma.
+      const missing: string[] = [];
+      if (!isEnabled(options.auth)) missing.push('auth');
+      if (!isEnabled(options.organizations)) missing.push('organizations');
+      if (!isEnabled(options.members)) missing.push('members');
+      if (missing.length > 0) {
+        throw new Error(
+          `[BackendKit] PlatformFeatureModule requires: ${missing.join(', ')}. ` +
+            `Habilite essas features em BackendKitModule.forRoot.`,
+        );
+      }
+
+      const platformConfig = normalizeFeatureOption<PlatformFeatureConfig>(
+        options.platform,
+      );
+      imports.push(PlatformFeatureModule.register(platformConfig));
+
+      // PLATFORM_IMPERSONATOR aponta para BkAuthService (que ganha o método
+      // `impersonate` na Task 4.0 do PRD prd-platform-admin-impersonation).
+      providers.push({
+        provide: PLATFORM_IMPERSONATOR,
+        useExisting: BkAuthService,
+      });
+      exports.push(PLATFORM_IMPERSONATOR);
     }
 
     return {

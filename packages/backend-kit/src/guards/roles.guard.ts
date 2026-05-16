@@ -103,10 +103,11 @@ export class RolesGuard implements CanActivate {
       organizationId &&
       user.sub
     ) {
-      userPermissions = await this.permissionsService.getConsolidatedPermissions(
-        user.sub,
-        organizationId,
-      );
+      userPermissions =
+        await this.permissionsService.getConsolidatedPermissions(
+          user.sub,
+          organizationId,
+        );
     }
 
     if (userPermissions.includes('*')) {
