@@ -85,6 +85,16 @@ export class BkPlatformService {
       targetUserId,
     );
 
+    // Expõe `impersonatedBy` no payload do login para o frontend
+    // conhecer o estado sem precisar decodificar o JWT (consumido pelo
+    // `FranchiseUserContext` + `ImpersonationBanner`). A claim
+    // equivalente já está no JWT via `buildAccessTokenClaims`.
+    if (response.user) {
+      response.user.impersonatedBy = adminUserId;
+    } else {
+      response.user = { impersonatedBy: adminUserId };
+    }
+
     const auditPayload: PlatformImpersonateStartedData = {
       adminUserId,
       adminEmail: admin?.email ?? 'unknown',
