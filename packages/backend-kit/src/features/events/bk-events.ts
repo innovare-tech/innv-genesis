@@ -37,6 +37,9 @@ export enum BkEvents {
   // Account
   ACCOUNT_UPDATED = 'bk.account.updated',
   PASSWORD_CHANGED = 'bk.account.passwordChanged',
+
+  // Platform Admin
+  PLATFORM_IMPERSONATE_STARTED = 'bk.platform.impersonateStarted',
 }
 
 export interface BkEventPayload<T = any> {

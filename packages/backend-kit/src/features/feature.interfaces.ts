@@ -10,6 +10,24 @@ export interface AuthMessages {
   registrationSuccess: string;
 }
 
+/**
+ * Intent que originou a geração do access token. Permite ao consumer
+ * customizar claims dependendo do fluxo (login, refresh, switch de
+ * organização, impersonação de Platform Admin).
+ */
+export type AccessTokenIntent = 'login' | 'refresh' | 'switch' | 'impersonate';
+
+/**
+ * Contexto passado para o hook `buildAccessTokenClaims`. Quando o intent
+ * é `impersonate`, `impersonatedBy` carrega o id do Platform Admin que
+ * iniciou a sessão impersonada.
+ */
+export interface AccessTokenClaimsContext {
+  intent: AccessTokenIntent;
+  /** Hex id do BkUser do Platform Admin que está impersonando. */
+  impersonatedBy?: string;
+}
+
 export interface AuthFeatureConfig {
   enabled?: boolean;
   enableRegistration?: boolean;
@@ -28,6 +46,19 @@ export interface AuthFeatureConfig {
   onAfterLogin?: (user: any, response: any) => Promise<void> | void;
   onPasswordRecovery?: (email: string, code: string) => Promise<void> | void;
   onVerificationCode?: (email: string, code: string) => Promise<void> | void;
+  /**
+   * Hook chamado por `BkAuthService.generateAuthResponse` antes da
+   * assinatura do JWT. Permite ao consumer adicionar claims customizadas
+   * (ex.: tenantId, role, permissions, isPlatformAdmin, impersonatedBy).
+   *
+   * Importante: as claims base (`sub`, `email`, `username`) NÃO podem
+   * ser sobrescritas pelo retorno do hook — a ordem do spread no
+   * payload garante isso.
+   */
+  buildAccessTokenClaims?: (
+    user: any,
+    context: AccessTokenClaimsContext,
+  ) => Promise<Record<string, unknown>> | Record<string, unknown>;
   messages?: Partial<AuthMessages>;
 }
 

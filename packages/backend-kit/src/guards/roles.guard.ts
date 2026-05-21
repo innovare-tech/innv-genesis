@@ -3,17 +3,43 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedRequest } from '../types/authenticated-request';
+import { BkPermissionsService } from '../features/members/services/permissions.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    // Optional dependency: quando o `BkMembersModule` está registrado no
+    // app (consumers multi-tenant), o guard resolve permissions
+    // on-the-fly via `getConsolidatedPermissions` para casos em que o JWT
+    // não carrega `permissions` no payload — cenário do `BkAuthService`
+    // padrão, que só emite `{sub, email, username}`.
+    //
+    // Quando ausente, o guard mantém o comportamento original (ler
+    // `user.permissions` do JWT) — preserva retrocompat para consumers
+    // que enriquecem o token no login com roles embarcadas.
+    @Optional()
+    private readonly permissionsService?: BkPermissionsService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip em contextos não-HTTP (ws, rpc). Mesma razão do
+    // `JwtAuthGuard`: como `APP_GUARD` global, este guard executa
+    // em handlers RabbitMQ e WebSocket onde não há `request.user`
+    // populado por `JwtAuthGuard` (que também faz skip). Sem o
+    // skip aqui, qualquer rota com `@Roles()` cairia no `if (!user)
+    // return false` em mensagens RabbitMQ — bloqueando consumers
+    // legítimos com 403 silencioso.
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
@@ -23,19 +49,76 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = context
+      .switchToHttp()
+      .getRequest<AuthenticatedRequest & Record<string, unknown>>();
+    const user = request.user;
 
     if (!user) {
       return false;
     }
 
-    const userPermissions: string[] = user['permissions'] || [];
-    const organization = context.switchToHttp().getRequest()['organization'];
+    const jwtPermissions: string[] =
+      (user['permissions'] as string[] | undefined) || [];
+    // O `TenantAccessGuard` popula `request.organization` com o tenant
+    // resolvido. Quando o resolver é o `BkTenantResolverService`, esse
+    // objeto é um documento Mongoose (`BkOrganization`) cuja chave
+    // primária é `_id` (ObjectId), não `id`. Consumers custom podem
+    // retornar objetos com `id` (UUID string). Aceitamos ambos para
+    // evitar acoplamento de shape.
+    const organization = request['organization'] as
+      | {
+          _id?: unknown;
+          id?: unknown;
+        }
+      | undefined;
+    const organizationId = organization
+      ? extractId(organization._id ?? organization.id)
+      : null;
 
-    if (organization && user['orgId'] && user['orgId'] !== organization['id']) {
+    // SKIP GRACIOSO: quando este guard está registrado como `APP_GUARD`
+    // global (via `BackendKitSetup`), ele roda ANTES do `TenantAccessGuard`
+    // declarado em `@TenantController.UseGuards`. Nesse ponto o
+    // `request.organization` ainda não foi populado — se validarmos
+    // `@Roles()` aqui, toda rota tenant-scoped retornaria 403 mesmo
+    // para Owner.
+    //
+    // A sequência correta no Nest v11 para um `@TenantController`:
+    //   1. `RolesGuard` GLOBAL roda — skippa aqui (organization undefined).
+    //   2. `TenantAccessGuard` do controller roda — popula organization.
+    //   3. `RolesGuard` do controller roda — organization populado, valida.
+    //
+    // Consumers que usam `@Roles()` FORA de `@TenantController` devem
+    // aplicar `@UseGuards(RolesGuard)` manualmente no controller, OU
+    // popular `request.organization` em middleware próprio. Sem contexto
+    // de tenant, @Roles não é avaliável (permissions são por org).
+    if (!organizationId && jwtPermissions.length === 0) {
+      return true;
+    }
+
+    if (organization && user['orgId'] && user['orgId'] !== organizationId) {
       throw new ForbiddenException(
         'As permissões deste token não pertencem à organização atual.',
       );
+    }
+
+    // Resolve permissions: JWT tem preferência (evita query extra), mas
+    // quando vazio e temos contexto de tenant + service disponível,
+    // consultamos o catalog de roles on-the-fly. É o que torna o
+    // `@Roles()` funcional para consumers cujo JWT não carrega permissions
+    // (ex.: ms-innv-logos-engine usando `BkAuthService`).
+    let userPermissions = jwtPermissions;
+    if (
+      jwtPermissions.length === 0 &&
+      this.permissionsService &&
+      organizationId &&
+      user.sub
+    ) {
+      userPermissions =
+        await this.permissionsService.getConsolidatedPermissions(
+          user.sub,
+          organizationId,
+        );
     }
 
     if (userPermissions.includes('*')) {
@@ -54,4 +137,24 @@ export class RolesGuard implements CanActivate {
 
     return true;
   }
+}
+
+/**
+ * Normaliza o identificador do tenant para string. Aceita:
+ *   - `string` (UUID, slug, etc.) — usado direto;
+ *   - `ObjectId` do Mongoose (tem `toHexString`) — mais barato que
+ *     `toString()` e retorna o hex canonical;
+ *   - outros objetos com `toString()` — fallback genérico.
+ *
+ * Retorna `null` quando o valor é nullish, para que o caller decida
+ * se deve pular o fallback dinâmico de permissions.
+ */
+function extractId(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') return value;
+  const hex = (value as { toHexString?: () => string }).toHexString;
+  if (typeof hex === 'function') {
+    return hex.call(value);
+  }
+  return String(value);
 }

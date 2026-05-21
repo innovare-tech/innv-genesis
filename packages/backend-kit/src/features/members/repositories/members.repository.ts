@@ -50,4 +50,34 @@ export class BkMembersRepository extends BaseRepository<BkOrganizationUser> {
       .setOptions({ strictQuery: false })
       .exec();
   }
+
+  /**
+   * Conta memberships ACTIVE agrupadas por `organization.id` para a
+   * lista de orgs informada. Uma única chamada Mongo, evitando N+1.
+   * Chaves do Map são o `String(orgId)`; orgs sem memberships ativas
+   * **não aparecem** no map (consumer deve usar `?? 0`).
+   */
+  async countActiveByOrgIds(
+    orgIds: ReadonlyArray<unknown>,
+  ): Promise<Map<string, number>> {
+    if (orgIds.length === 0) return new Map();
+
+    const rows = await this.model
+      .aggregate<{ _id: unknown; count: number }>([
+        {
+          $match: {
+            'organization.id': { $in: orgIds as unknown[] },
+            status: 'ACTIVE',
+          },
+        },
+        { $group: { _id: '$organization.id', count: { $sum: 1 } } },
+      ])
+      .exec();
+
+    const result = new Map<string, number>();
+    for (const row of rows) {
+      result.set(String(row._id), row.count);
+    }
+    return result;
+  }
 }

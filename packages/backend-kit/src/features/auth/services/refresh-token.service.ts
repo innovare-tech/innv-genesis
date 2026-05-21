@@ -14,7 +14,10 @@ export class BkRefreshTokenService {
     private readonly config: AuthFeatureConfig,
   ) {}
 
-  async create(userId: ObjectId | string): Promise<string> {
+  async create(
+    userId: ObjectId | string,
+    impersonatedBy?: string,
+  ): Promise<string> {
     const token = randomUUID();
     const expiresIn = this.config.refreshTokenExpiresIn ?? '7d';
     const ms = this.parseExpiry(expiresIn);
@@ -23,12 +26,17 @@ export class BkRefreshTokenService {
       userId: typeof userId === 'string' ? new ObjectId(userId) : userId,
       token,
       expiresAt: new Date(Date.now() + ms),
+      // Persistido apenas em sessões impersonadas, para preservar a
+      // claim `impersonatedBy` no JWT durante todo o ciclo de refresh.
+      impersonatedBy,
     });
 
     return token;
   }
 
-  async validate(token: string): Promise<string> {
+  async validate(
+    token: string,
+  ): Promise<{ userId: string; impersonatedBy?: string }> {
     const refreshToken = await this.refreshTokensRepo.findValidToken(token);
 
     if (!refreshToken || refreshToken.expiresAt < new Date()) {
@@ -39,7 +47,10 @@ export class BkRefreshTokenService {
       );
     }
 
-    return refreshToken.userId.toHexString();
+    return {
+      userId: refreshToken.userId.toHexString(),
+      impersonatedBy: refreshToken.impersonatedBy,
+    };
   }
 
   async revoke(token: string): Promise<void> {
