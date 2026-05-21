@@ -29,6 +29,17 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip em contextos não-HTTP (ws, rpc). Mesma razão do
+    // `JwtAuthGuard`: como `APP_GUARD` global, este guard executa
+    // em handlers RabbitMQ e WebSocket onde não há `request.user`
+    // populado por `JwtAuthGuard` (que também faz skip). Sem o
+    // skip aqui, qualquer rota com `@Roles()` cairia no `if (!user)
+    // return false` em mensagens RabbitMQ — bloqueando consumers
+    // legítimos com 403 silencioso.
+    if (context.getType() !== 'http') {
+      return true;
+    }
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],

@@ -20,6 +20,26 @@ export interface JwtAuthGuardOptions {
   queryTokenScope?: string;
   missingTokenMessage?: string;
   invalidTokenMessage?: string;
+  /**
+   * Quando `true` (default), o guard só atua em contextos `http` —
+   * em `ws` (Socket.IO) e `rpc` (RabbitMQ/microservices) ele
+   * curto-circuita retornando `true` sem tentar `switchToHttp()`.
+   *
+   * Sem esse skip, o guard registrado como `APP_GUARD` global tenta
+   * extrair Bearer token de um `request` inexistente em contextos
+   * não-HTTP, sempre lança `UnauthorizedException`, o handler do
+   * RabbitMQ NACK+requeue a mensagem e cria um loop infinito de
+   * 401 (degradando CPU/disco do serviço).
+   *
+   * Auth em contextos não-HTTP deve ser feita explicitamente no
+   * próprio gateway/consumer (ex.: `handleConnection` do
+   * Socket.IO gateway valida o token do `handshake.auth.token`).
+   *
+   * Defina `false` apenas se você sabe que o guard precisa rodar
+   * em transports custom onde `switchToHttp().getRequest()` foi
+   * adaptado para devolver um objeto válido.
+   */
+  httpOnly?: boolean;
 }
 
 export const JWT_AUTH_GUARD_OPTIONS = Symbol('JWT_AUTH_GUARD_OPTIONS');
@@ -36,6 +56,16 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip em contextos não-HTTP. Sem este short-circuit, o guard
+    // registrado como `APP_GUARD` global roda em handlers RabbitMQ
+    // (`@RabbitSubscribe`) e WebSocket sem `request` real → sempre
+    // lança 401 → NACK+requeue do RabbitMQ → loop infinito.
+    // Ver `JwtAuthGuardOptions.httpOnly` para detalhes.
+    const httpOnly = this.options?.httpOnly ?? true;
+    if (httpOnly && context.getType() !== 'http') {
+      return true;
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

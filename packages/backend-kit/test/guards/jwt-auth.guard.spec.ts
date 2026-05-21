@@ -21,13 +21,18 @@ describe('JwtAuthGuard', () => {
     currentToken: undefined as any,
   });
 
-  const mockContext = (request: any, isPublic = false): ExecutionContext => {
+  const mockContext = (
+    request: any,
+    isPublic = false,
+    type: 'http' | 'ws' | 'rpc' = 'http',
+  ): ExecutionContext => {
     const ctx = {
       switchToHttp: () => ({
         getRequest: () => request,
       }),
       getHandler: () => ({}),
       getClass: () => ({}),
+      getType: () => type,
     } as unknown as ExecutionContext;
 
     return ctx;
@@ -144,5 +149,49 @@ describe('JwtAuthGuard', () => {
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  describe('non-HTTP contexts (httpOnly default)', () => {
+    // Regressão: o guard registrado como `APP_GUARD` global rodava em
+    // handlers RabbitMQ (`@RabbitSubscribe`) e WebSocket, sempre
+    // lançando 401 (sem `request.headers` válido) → NACK+requeue
+    // do RabbitMQ em loop infinito, degradando CPU/disco.
+    // Ver `JwtAuthGuardOptions.httpOnly`.
+
+    it('should short-circuit and return true in ws context (default httpOnly=true)', async () => {
+      const request = mockRequest();
+      const context = mockContext(request, false, 'ws');
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(jwtService.verifyAsync).not.toHaveBeenCalled();
+    });
+
+    it('should short-circuit and return true in rpc context (RabbitMQ)', async () => {
+      const request = mockRequest();
+      const context = mockContext(request, false, 'rpc');
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(jwtService.verifyAsync).not.toHaveBeenCalled();
+    });
+
+    it('should still enforce auth in non-HTTP contexts when httpOnly=false', async () => {
+      const guardWithOptions = new JwtAuthGuard(
+        jwtService,
+        configService,
+        reflector,
+        { httpOnly: false },
+      );
+
+      const request = mockRequest();
+      const context = mockContext(request, false, 'rpc');
+
+      await expect(guardWithOptions.canActivate(context)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
   });
 });

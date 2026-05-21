@@ -7,7 +7,11 @@ describe('RolesGuard', () => {
   let guard: RolesGuard;
   let reflector: Reflector;
 
-  const mockContext = (user: any, organization?: any): ExecutionContext => {
+  const mockContext = (
+    user: any,
+    organization?: any,
+    type: 'http' | 'ws' | 'rpc' = 'http',
+  ): ExecutionContext => {
     const request = { user, organization };
     return {
       switchToHttp: () => ({
@@ -15,6 +19,7 @@ describe('RolesGuard', () => {
       }),
       getHandler: () => ({}),
       getClass: () => ({}),
+      getType: () => type,
     } as unknown as ExecutionContext;
   };
 
@@ -420,5 +425,27 @@ describe('RolesGuard', () => {
         ).toHaveBeenCalledWith('user-1', 'org-123');
       },
     );
+  });
+
+  describe('non-HTTP contexts', () => {
+    // Regressão: como `APP_GUARD` global, este guard rodava em
+    // handlers RabbitMQ/WebSocket onde `request.user` é undefined
+    // (`JwtAuthGuard` também faz skip no contexto não-HTTP).
+    // Sem o skip aqui, qualquer rota com `@Roles()` cairia no
+    // `if (!user) return false` ao processar mensagem RabbitMQ.
+
+    it('should short-circuit and return true in ws context', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
+
+      const context = mockContext(undefined, undefined, 'ws');
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
+
+    it('should short-circuit and return true in rpc context (RabbitMQ)', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
+
+      const context = mockContext(undefined, undefined, 'rpc');
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
   });
 });
