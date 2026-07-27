@@ -10,6 +10,7 @@ describe('LogosService', () => {
       get: jest.fn(),
       post: jest.fn(),
       put: jest.fn(),
+      patch: jest.fn(),
       delete: jest.fn(),
     };
 
@@ -119,6 +120,92 @@ describe('LogosService', () => {
         'http://localhost:3001/api/v1/agents/agent_1',
         expect.any(Object),
       );
+    });
+  });
+
+  describe('routing targets', () => {
+    const base = 'http://localhost:3001/api/v1/agents/agent_1/routing-targets';
+
+    it('should GET the routing targets of an agent', async () => {
+      mockAxiosRef.get.mockResolvedValue({
+        data: [{ id: 'rt1', externalId: 'dept_fin', type: 'DEPARTMENT' }],
+      });
+
+      const result = await service.listRoutingTargets('agent_1');
+
+      expect(mockAxiosRef.get).toHaveBeenCalledWith(base, expect.any(Object));
+      expect(result).toHaveLength(1);
+      expect(result[0].externalId).toBe('dept_fin');
+    });
+
+    it('should POST a new routing target with the API key header', async () => {
+      mockAxiosRef.post.mockResolvedValue({ data: { id: 'rt1' } });
+
+      await service.createRoutingTarget('agent_1', {
+        externalId: 'dept_fin',
+        type: 'DEPARTMENT',
+        name: 'Financeiro',
+        description: 'Cobrança e faturas',
+      });
+
+      expect(mockAxiosRef.post).toHaveBeenCalledWith(
+        base,
+        expect.objectContaining({ externalId: 'dept_fin' }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'X-API-Key': 'test-api-key' }),
+        }),
+      );
+    });
+
+    // PATCH, não PUT: era o verbo que faltava no service.
+    it('should PATCH on update', async () => {
+      mockAxiosRef.patch.mockResolvedValue({ data: { id: 'rt1' } });
+
+      await service.updateRoutingTarget('agent_1', 'rt1', { name: 'Novo' });
+
+      expect(mockAxiosRef.patch).toHaveBeenCalledWith(
+        `${base}/rt1`,
+        { name: 'Novo' },
+        expect.any(Object),
+      );
+      expect(mockAxiosRef.put).not.toHaveBeenCalled();
+    });
+
+    it('should PATCH the dedicated status route', async () => {
+      mockAxiosRef.patch.mockResolvedValue({ data: { id: 'rt1' } });
+
+      await service.updateRoutingTargetStatus('agent_1', 'rt1', 'CLOSED');
+
+      expect(mockAxiosRef.patch).toHaveBeenCalledWith(
+        `${base}/rt1/status`,
+        { status: 'CLOSED' },
+        expect.any(Object),
+      );
+    });
+
+    it('should DELETE a routing target', async () => {
+      mockAxiosRef.delete.mockResolvedValue({ data: {} });
+
+      await service.deleteRoutingTarget('agent_1', 'rt1');
+
+      expect(mockAxiosRef.delete).toHaveBeenCalledWith(
+        `${base}/rt1`,
+        expect.any(Object),
+      );
+    });
+
+    it('should surface API errors as LogosApiException', async () => {
+      mockAxiosRef.patch.mockRejectedValue({
+        response: {
+          status: 404,
+          statusText: 'Not Found',
+          data: { message: 'Routing target not found' },
+        },
+      });
+
+      await expect(
+        service.updateRoutingTargetStatus('agent_1', 'nope', 'OPEN'),
+      ).rejects.toMatchObject({ statusCode: 404 });
     });
   });
 
