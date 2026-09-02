@@ -24,3 +24,7 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+coverage/
+packages/*/coverage/
+
+.npmrc

@@ -10,13 +10,37 @@ export {
   BotDecisionTarget,
   LogosBotAction,
 } from './interfaces/webhook.interface';
-export { IngestMessage, IngestResponse } from './interfaces/message.interface';
+export {
+  IngestMessage,
+  IngestResponse,
+  InteractiveReply,
+} from './interfaces/message.interface';
+export {
+  OutboundMessage,
+  OutboundMessageType,
+  TextOutboundMessage,
+  MediaOutboundMessage,
+  LocationOutboundMessage,
+  ProductOutboundMessage,
+  ProductCarouselOutboundMessage,
+  InteractiveOutboundMessage,
+  InteractiveButton,
+  InteractiveRow,
+  InteractiveSection,
+} from './interfaces/outbound-message.interface';
 export {
   CreateAgentInput,
   UpdateAgentInput,
   AgentResponse,
 } from './interfaces/agent.interface';
 export { SessionResponse } from './interfaces/session.interface';
+export {
+  RoutingTargetType,
+  RoutingTargetStatus,
+  CreateRoutingTargetInput,
+  UpdateRoutingTargetInput,
+  RoutingTargetResponse,
+} from './interfaces/routing-target.interface';
 
 export { LOGOS_OPTIONS } from './logos.constants';
 export { LogosService } from './logos.service';

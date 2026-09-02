@@ -1,3 +1,5 @@
+import { OutboundMessage } from './outbound-message.interface';
+
 export enum LogosBotAction {
   REPLY = 'REPLY',
   FINISH = 'FINISH',
@@ -16,6 +18,14 @@ export interface BotDecision {
   action: LogosBotAction;
   message?: string;
   target?: BotDecisionTarget;
+  /**
+   * Mensagens ricas de saída (texto/mídia/localização/produto/menu
+   * interativo). Aditivo e opcional: quando presente, o consumer despacha
+   * cada item no canal (ex: `INTERACTIVE` → botões/lista no WhatsApp);
+   * quando ausente, usa apenas `message`. Coexiste com `message` (nunca
+   * o substitui — `message` continua sendo o fallback textual).
+   */
+  messages?: OutboundMessage[];
 }
 
 export interface LogosWebhookPayload {

@@ -9,6 +9,12 @@ import {
   AgentResponse,
 } from './interfaces/agent.interface';
 import { SessionResponse } from './interfaces/session.interface';
+import {
+  CreateRoutingTargetInput,
+  RoutingTargetResponse,
+  RoutingTargetStatus,
+  UpdateRoutingTargetInput,
+} from './interfaces/routing-target.interface';
 import { LogosApiException } from './exceptions/logos-api.exception';
 
 @Injectable()
@@ -69,6 +75,72 @@ export class LogosService {
     await this.delete(`/agents/${agentId}`);
   }
 
+  // ── Routing targets (destinos de escalação) ────────────────────────────
+  //
+  // O engine não expõe endpoint de sync em massa: a reconciliação é do
+  // cliente. O padrão é listar, casar por `externalId`, criar o que falta,
+  // atualizar o que divergiu e FECHAR (`status: 'CLOSED'`) o que sumiu — em
+  // vez de deletar, para não perder histórico. Ver o exemplo no README.
+
+  async listRoutingTargets(agentId: string): Promise<RoutingTargetResponse[]> {
+    return this.get<RoutingTargetResponse[]>(
+      `/agents/${agentId}/routing-targets`,
+    );
+  }
+
+  /**
+   * Cria um destino. **O engine força `status: 'OPEN'`** e ignora qualquer
+   * status enviado aqui — para reabrir um destino fechado use
+   * {@link updateRoutingTargetStatus}.
+   *
+   * ⚠️ Não há índice único em `(agentId, externalId)`: dois `create` com o
+   * mesmo `externalId` produzem dois destinos duplicados, e o modelo passa a
+   * ver a opção repetida. Garanta a idempotência no chamador.
+   */
+  async createRoutingTarget(
+    agentId: string,
+    input: CreateRoutingTargetInput,
+  ): Promise<RoutingTargetResponse> {
+    return this.post<RoutingTargetResponse>(
+      `/agents/${agentId}/routing-targets`,
+      input,
+    );
+  }
+
+  async updateRoutingTarget(
+    agentId: string,
+    targetId: string,
+    input: UpdateRoutingTargetInput,
+  ): Promise<RoutingTargetResponse> {
+    return this.patch<RoutingTargetResponse>(
+      `/agents/${agentId}/routing-targets/${targetId}`,
+      input,
+    );
+  }
+
+  /**
+   * Só `CLOSED` remove o destino das opções do bot. `BUSY` continua elegível —
+   * entra no prompt como sinal para o modelo, não como bloqueio.
+   */
+  async updateRoutingTargetStatus(
+    agentId: string,
+    targetId: string,
+    status: RoutingTargetStatus,
+  ): Promise<RoutingTargetResponse> {
+    return this.patch<RoutingTargetResponse>(
+      `/agents/${agentId}/routing-targets/${targetId}/status`,
+      { status },
+    );
+  }
+
+  /** Hard delete. Para desativar preservando histórico, prefira `CLOSED`. */
+  async deleteRoutingTarget(
+    agentId: string,
+    targetId: string,
+  ): Promise<void> {
+    await this.delete(`/agents/${agentId}/routing-targets/${targetId}`);
+  }
+
   private async get<T>(path: string): Promise<T> {
     try {
       const response = await this.httpService.axiosRef.get<T>(
@@ -97,6 +169,19 @@ export class LogosService {
   private async put<T>(path: string, body: any): Promise<T> {
     try {
       const response = await this.httpService.axiosRef.put<T>(
+        `${this.baseUrl}${path}`,
+        body,
+        { headers: this.headers, timeout: this.timeout },
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  private async patch<T>(path: string, body: any): Promise<T> {
+    try {
+      const response = await this.httpService.axiosRef.patch<T>(
         `${this.baseUrl}${path}`,
         body,
         { headers: this.headers, timeout: this.timeout },

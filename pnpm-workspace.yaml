@@ -2,6 +2,11 @@ packages:
   - packages/*
   - packages/backend-kit/example
 
+allowBuilds:
+  '@nestjs/core': set this to true or false
+  '@scarf/scarf': set this to true or false
+  bcrypt: set this to true or false
+
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@scarf/scarf'
